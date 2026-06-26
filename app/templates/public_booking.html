@@ -1,5 +1,107 @@
-{% extends 'public_base.html' %}{% block content %}
-<section class="hero cms-hero" {% if page and page.hero_image %}style="background-image:linear-gradient(120deg,rgba(9,5,20,.92),rgba(60,0,56,.72)),url('{{ url_for('static', filename='uploads/' + page.hero_image) }}')"{% endif %}><div><span>BOOKING</span><h1>{{page.title if page else st.get('booking_title','Prenota')}}</h1><p>{{page.subtitle if page else 'Invia la richiesta e ti ricontatteremo.'}}</p></div></section>
-{% for s in sections %}<section class="public-section"><div class="section-copy"><span>{{s.kicker}}</span><h2>{{s.title}}</h2><p>{{s.body}}</p></div>{% if s.image %}<div class="section-image"><img src="{{ url_for('static', filename='uploads/' + s.image) }}" alt="{{s.title}}"></div>{% endif %}</section>{% endfor %}
-<section class="booking-wrap"><div class="section-head"><span>RICHIESTA</span><h2>Modulo prenotazione</h2></div><form method="post" class="public-form"><input name="customer_name" placeholder="Nome e cognome" required><input name="phone" placeholder="Telefono" required><input type="date" name="booking_date" required><input type="time" name="start_time" required><input type="time" name="end_time" required><select name="service">{% for g in games %}<option>{{g.title}}</option>{% endfor %}{% for p in packs %}<option>{{p.name}}</option>{% endfor %}</select><input type="number" name="people" placeholder="Numero persone" value="1"><textarea name="notes" placeholder="Note, compleanno, preferenze orario"></textarea><button class="btn primary">Invia richiesta</button></form></section>
+{% extends 'public_base.html' %}
+{% block content %}
+<section class="booking-mobile-shell" data-public-booking
+  data-games='{{ games_payload|tojson }}'
+  data-bookings='{{ bookings_payload|tojson }}'
+  data-upload-base="{{ url_for('static', filename='uploads/') }}"
+  data-open="{{ st.get('booking_open_time','10:00') }}"
+  data-close="{{ st.get('booking_close_time','23:00') }}"
+  data-capacity="6">
+
+  <div class="booking-mobile-header">
+    <span>PRENOTAZIONE RAPIDA</span>
+    <h1>{{ page.title if page else 'Prenota la tua partita' }}</h1>
+    <p>{{ page.subtitle if page else 'Scegli giorno, gioco, orario e posti. Gli slot sono calcolati automaticamente.' }}</p>
+  </div>
+
+  {% for s in sections %}
+  <div class="mobile-info-card">
+    <span>{{ s.kicker }}</span>
+    <h2>{{ s.title }}</h2>
+    <p>{{ s.body }}</p>
+  </div>
+  {% endfor %}
+
+  <form method="post" class="mobile-booking-form" id="mobileBookingForm">
+    <input type="hidden" name="booking_date" id="mbBookingDate">
+    <input type="hidden" name="start_time" id="mbStartTime">
+    <input type="hidden" name="end_time" id="mbEndTime">
+    <input type="hidden" name="service" id="mbService">
+    <input type="hidden" name="people" id="mbPeople" value="1">
+    <input type="hidden" name="duration" id="mbDuration" value="30">
+    <input type="hidden" name="total" id="mbTotal" value="0">
+    <input type="hidden" name="notes" id="mbNotes">
+
+    <div class="phone-book-card">
+      <label>Giorno</label>
+      <input type="date" id="mbDate" required>
+
+      <label>Arena</label>
+      <select id="mbArena">
+        <option value="Adventure Arena">Adventure Arena</option>
+      </select>
+
+      <label>Gioco</label>
+      <select id="mbGame" required>
+        {% for g in games_payload %}
+        <option value="{{ g.title }}" data-duration="{{ g.duration }}" data-price="{{ g.price }}">{{ g.title }}</option>
+        {% endfor %}
+      </select>
+
+      <label>Orario</label>
+      <select id="mbSlot" required></select>
+
+      <div class="selected-game-card">
+        <div class="game-cover-mini" id="mbGameCover">🎮</div>
+        <div>
+          <strong id="mbGameTitle">Gioco</strong>
+          <p id="mbGameDesc">Scegli il gioco per vedere durata, prezzo e disponibilità.</p>
+          <div class="game-tags"><span id="mbGameDuration">30 min</span><span id="mbGamePrice">€0</span></div>
+        </div>
+      </div>
+
+      <div class="booking-mode-list">
+        <label class="radio-line"><input type="radio" name="booking_mode" value="Nuova partita" checked> Nuova partita</label>
+        <label class="radio-line"><input type="radio" name="booking_mode" value="Unisciti alla lobby"> Unisciti alla lobby</label>
+        <label class="radio-line"><input type="radio" name="booking_mode" value="Partita privata"> Partita privata</label>
+      </div>
+
+      <div class="players-title">
+        <span>IN QUANTI SIETE</span>
+        <small>Massimo 6 slot per orario</small>
+      </div>
+      <div class="player-buttons" id="mbPlayers"></div>
+      <p class="slot-help" id="mbAvailabilityText">Scegli un orario per vedere i posti disponibili.</p>
+    </div>
+
+    <div class="phone-book-card lobby-card">
+      <div class="section-mini-head">
+        <span>LOBBY ATTIVE</span>
+        <h2>Partite già aperte</h2>
+        <p>Puoi unirti a una partita pubblica già aperta oppure crearne una nuova.</p>
+      </div>
+      <div id="mbLobbyList" class="lobby-list"></div>
+    </div>
+
+    <div class="phone-book-card">
+      <label>I tuoi dati</label>
+      <input name="customer_name" id="mbName" placeholder="Nome e Cognome" required>
+      <input name="phone" id="mbPhone" placeholder="Telefono" required>
+      <input name="email" id="mbEmail" type="email" placeholder="Email">
+      <div class="promo-row">
+        <input name="promo_code" id="mbPromo" placeholder="Codice promo">
+        <button type="button" class="btn ghost" id="mbApplyPromo">Applica</button>
+      </div>
+      <label class="privacy-line"><input type="checkbox" required> Accetto la richiesta di prenotazione</label>
+    </div>
+
+    <div class="phone-book-card summary-card">
+      <span>Riepilogo</span>
+      <div id="mbSummary" class="booking-summary-lines"></div>
+      <p class="mini-help">Il totale viene calcolato automaticamente in base al numero di giocatori. Pagamento e conferma vengono gestiti dall'admin.</p>
+    </div>
+
+    <button class="mobile-book-button" type="submit">Blocca lo slot</button>
+  </form>
+</section>
 {% endblock %}

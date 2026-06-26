@@ -1,1 +1,99 @@
-{% extends 'base.html' %}{% block content %}<h1>Prenotazioni</h1><div class="panel"><form method="post" class="form gridform"><input name="customer_name" placeholder="Nome cliente" required><input name="phone" placeholder="Telefono"><input name="booking_date" type="date" required><input name="start_time" type="time" required><input name="end_time" type="time" required><input name="service" placeholder="Servizio/Pacchetto" required><select name="status"><option>confirmed</option><option>draft</option><option>cancelled</option></select><input name="people" type="number" placeholder="Persone"><input name="deposit" type="number" step="0.01" placeholder="Acconto"><input name="total" type="number" step="0.01" placeholder="Totale"><textarea name="notes" placeholder="Note"></textarea><button>Salva prenotazione</button></form></div><div class="panel"><table><tr><th>Cliente</th><th>Data</th><th>Ora</th><th>Servizio</th><th>Totale</th><th>Stato</th></tr>{% for r in rows %}<tr><td>{{r.customer_name}}<br><small>{{r.phone}}</small></td><td>{{r.booking_date}}</td><td>{{r.start_time}}-{{r.end_time}}</td><td>{{r.service}}</td><td>€ {{r.total}}</td><td>{{r.status}}</td></tr>{% endfor %}</table></div>{% endblock %}
+{% extends 'base.html' %}
+{% block content %}
+<h1>Prenotazioni</h1>
+
+<div class="panel">
+  <form method="post" class="form gridform">
+    <input name="customer_name" placeholder="Nome cliente" required>
+    <input name="phone" placeholder="Telefono">
+    <input name="booking_date" type="date" required>
+    <input name="start_time" type="time" required>
+    <input name="end_time" type="time" required>
+    <input name="service" placeholder="Servizio/Pacchetto" required>
+    <select name="status">
+      <option value="confirmed">confirmed</option>
+      <option value="draft" selected>draft</option>
+      <option value="cancelled">cancelled</option>
+    </select>
+    <input name="people" type="number" placeholder="Persone" min="1">
+    <input name="deposit" type="number" step="0.01" placeholder="Acconto">
+    <input name="total" type="number" step="0.01" placeholder="Totale">
+    <textarea name="notes" placeholder="Note"></textarea>
+    <button>Salva prenotazione</button>
+  </form>
+</div>
+
+<div class="panel table-panel bookings-panel">
+  <div class="table-headline">
+    <div>
+      <span>GESTIONE PRENOTAZIONI</span>
+      <h2>Lista prenotazioni</h2>
+    </div>
+    <b>{{ rows|length }} prenotazioni</b>
+  </div>
+  <div class="responsive-table">
+    <table class="admin-table bookings-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Data</th>
+          <th>Ora</th>
+          <th>Servizio</th>
+          <th>Totale</th>
+          <th>Stato</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td data-label="Cliente"><strong>{{r.customer_name}}</strong><br><small>{{r.phone}}</small></td>
+          <td data-label="Data">{{r.booking_date}}</td>
+          <td data-label="Ora">{{r.start_time}}-{{r.end_time}}</td>
+          <td data-label="Servizio">{{r.service}}</td>
+          <td data-label="Totale">€ {{r.total}}</td>
+          <td data-label="Stato">
+            <button type="button" class="status-edit-btn status-{{r.status}}" data-toggle-detail="booking-{{r.id}}">
+              {{r.status}}
+            </button>
+          </td>
+        </tr>
+        <tr id="booking-{{r.id}}" class="detail-row booking-edit-row">
+          <td colspan="6">
+            <div class="client-detail-box booking-edit-box">
+              <div class="edit-row-title">
+                <span>MODIFICA PRENOTAZIONE</span>
+                <h3>{{r.customer_name}} · {{r.booking_date}} {{r.start_time}}</h3>
+                <p>Cambia le voci della prenotazione e poi premi <b>Salva modifiche</b>.</p>
+              </div>
+              <form method="post" action="{{ url_for('main.update_booking', booking_id=r.id) }}" class="booking-edit-form">
+                <input name="customer_name" value="{{r.customer_name}}" placeholder="Nome cliente" required>
+                <input name="phone" value="{{r.phone or ''}}" placeholder="Telefono">
+                <input name="booking_date" type="date" value="{{r.booking_date}}" required>
+                <input name="start_time" type="time" value="{{r.start_time}}" required>
+                <input name="end_time" type="time" value="{{r.end_time}}" required>
+                <input name="service" value="{{r.service}}" placeholder="Servizio/Pacchetto" required>
+                <select name="status">
+                  <option value="draft" {% if r.status=='draft' %}selected{% endif %}>draft</option>
+                  <option value="confirmed" {% if r.status=='confirmed' %}selected{% endif %}>confirmed</option>
+                  <option value="cancelled" {% if r.status=='cancelled' %}selected{% endif %}>cancelled</option>
+                </select>
+                <input name="people" type="number" min="1" value="{{r.people or 1}}" placeholder="Persone">
+                <input name="deposit" type="number" step="0.01" value="{{r.deposit or 0}}" placeholder="Acconto">
+                <input name="total" type="number" step="0.01" value="{{r.total or 0}}" placeholder="Totale">
+                <textarea name="notes" placeholder="Note interne">{{r.notes or ''}}</textarea>
+                <div class="booking-edit-actions">
+                  <button type="submit">Salva modifiche</button>
+                  <button type="button" class="btn" data-toggle-detail="booking-{{r.id}}">Chiudi</button>
+                </div>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty-row">Nessuna prenotazione presente.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -158,14 +158,68 @@ def public_booking():
     sections = query('SELECT * FROM site_sections WHERE page_id=? AND active=1 ORDER BY sort_order,id', (page['id'],)) if page else []
     games = query('SELECT * FROM games WHERE active=1 ORDER BY title')
     packs = query('SELECT * FROM packages WHERE active=1 ORDER BY type, price')
+
+    def _time_add_minutes(value, minutes):
+        try:
+            h, m = [int(x) for x in (value or '00:00').split(':')[:2]]
+            base = datetime(2000, 1, 1, h, m)
+            return (base + timedelta(minutes=int(minutes or 30))).strftime('%H:%M')
+        except Exception:
+            return value or ''
+
     if request.method == 'POST':
         data = request.form
-        execute('''INSERT INTO bookings(customer_name,phone,booking_date,start_time,end_time,service,status,people,deposit,total,notes,created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
-                (data.get('customer_name'), data.get('phone'), data.get('booking_date'), data.get('start_time'), data.get('end_time'), data.get('service'), 'draft', data.get('people') or 1, 0, 0, data.get('notes'), datetime.now().isoformat(timespec='seconds')))
+        people = int(data.get('people') or 1)
+        duration = int(data.get('duration') or 30)
+        start_time = data.get('start_time') or ''
+        end_time = data.get('end_time') or _time_add_minutes(start_time, duration)
+        total = float(data.get('total') or 0)
+        email = (data.get('email') or '').strip()
+        mode = data.get('booking_mode') or 'Nuova partita'
+        promo = (data.get('promo_code') or '').strip()
+        raw_notes = (data.get('notes') or '').strip()
+        notes_parts = [f'Tipo prenotazione: {mode}', f'Durata: {duration} minuti']
+        if email:
+            notes_parts.append(f'Email: {email}')
+        if promo:
+            notes_parts.append(f'Codice promo: {promo}')
+        if raw_notes:
+            notes_parts.append(raw_notes)
+        notes = ' | '.join(notes_parts)
+        execute('INSERT INTO bookings(customer_name,phone,booking_date,start_time,end_time,service,status,people,deposit,total,notes,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+                (data.get('customer_name'), data.get('phone'), data.get('booking_date'), start_time, end_time,
+                 data.get('service'), 'draft', people, 0, total, notes, datetime.now().isoformat(timespec='seconds')))
         flash('Richiesta inviata. Ti ricontatteremo per confermare la prenotazione.')
         return redirect(url_for('main.public_booking'))
-    return render_template('public_booking.html', st=st, page=page, sections=sections, games=games, packs=packs)
+
+    today = date.today().isoformat()
+    booking_rows = query("SELECT id, customer_name, booking_date, start_time, end_time, service, status, people, total FROM bookings WHERE booking_date>=? AND status!='cancelled' ORDER BY booking_date,start_time", (today,))
+    games_payload = []
+    for g in games:
+        games_payload.append({
+            'id': g['id'],
+            'title': g['title'],
+            'category': g['category'],
+            'players': g['players'],
+            'duration': int(g['duration'] or 30),
+            'price': float(g['price'] or 0),
+            'description': g['description'] or '',
+            'cover': g['cover'] or ''
+        })
+    bookings_payload = []
+    for b in booking_rows:
+        bookings_payload.append({
+            'id': b['id'],
+            'customer_name': b['customer_name'],
+            'booking_date': b['booking_date'],
+            'start_time': b['start_time'],
+            'end_time': b['end_time'],
+            'service': b['service'],
+            'status': b['status'],
+            'people': int(b['people'] or 1),
+            'total': float(b['total'] or 0)
+        })
+    return render_template('public_booking.html', st=st, page=page, sections=sections, games=games, packs=packs, games_payload=games_payload, bookings_payload=bookings_payload)
 
 
 @bp.route('/admin')
@@ -369,6 +423,21 @@ def bookings():
         return redirect(url_for('main.bookings'))
     rows = query('SELECT * FROM bookings ORDER BY booking_date DESC,start_time DESC LIMIT 100')
     return render_template('bookings.html', rows=rows)
+
+
+@bp.route('/bookings/<int:booking_id>/update', methods=['POST'])
+@login_required
+def update_booking(booking_id):
+    data = request.form
+    execute('''UPDATE bookings
+               SET customer_name=?, phone=?, booking_date=?, start_time=?, end_time=?, service=?,
+                   status=?, people=?, deposit=?, total=?, notes=?
+               WHERE id=?''',
+            (data.get('customer_name'), data.get('phone'), data.get('booking_date'), data.get('start_time'),
+             data.get('end_time'), data.get('service'), data.get('status','draft'), data.get('people') or 1,
+             data.get('deposit') or 0, data.get('total') or 0, data.get('notes'), booking_id))
+    flash('Prenotazione aggiornata')
+    return redirect(url_for('main.bookings'))
 
 
 @bp.route('/sessions', methods=['GET','POST'])
