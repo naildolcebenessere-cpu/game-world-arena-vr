@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Formato richiesta evento</h1>
+<div class="panel">
+  <p>Da qui modifichi il form pubblico della pagina <b>Compleanni</b>. Puoi cambiare testi, pulsante e aggiungere tutti i campi che vuoi.</p>
+  <form method="post" class="form event-format-form" id="eventFormatForm">
+    <div class="gridform">
+      <label>Titolo form<input name="event_form_title" value="{{ form_cfg.title }}"></label>
+      <label>Testo pulsante<input name="event_form_button" value="{{ form_cfg.button }}"></label>
+    </div>
+    <label>Sottotitolo<textarea name="event_form_subtitle">{{ form_cfg.subtitle }}</textarea></label>
+    <label>Testo privacy<textarea name="event_form_privacy">{{ form_cfg.privacy }}</textarea></label>
+    <label>Messaggio dopo invio<textarea name="event_form_thanks">{{ form_cfg.thanks }}</textarea></label>
+
+    <h2>Campi del form</h2>
+    <div class="format-fields" id="formatFields">
+      {% for f in form_cfg.fields %}
+      <div class="format-field-row">
+        <input name="field_label" placeholder="Etichetta" value="{{ f.label }}">
+        <input name="field_key" placeholder="nome_campo" value="{{ f.key }}">
+        <select name="field_type">
+          {% for t in ['text','email','tel','number','date','time','select','textarea'] %}
+          <option value="{{t}}" {% if f.type==t %}selected{% endif %}>{{t}}</option>
+          {% endfor %}
+        </select>
+        <input name="field_placeholder" placeholder="Placeholder" value="{{ f.placeholder }}">
+        <textarea name="field_options" placeholder="Opzioni select, una per riga">{{ f.options }}</textarea>
+        <label class="inline-check"><input type="checkbox" name="field_required" value="{{ loop.index0 }}" {% if f.required %}checked{% endif %}> Obbligatorio</label>
+        <button type="button" class="btn ghost remove-format-field">Rimuovi</button>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn ghost" id="addFormatField">+ Aggiungi campo</button>
+    <button>Salva formato evento</button>
+  </form>
+</div>
+<script>
+(function(){
+  const wrap = document.getElementById('formatFields');
+  const add = document.getElementById('addFormatField');
+  function renumber(){
+    wrap.querySelectorAll('.format-field-row').forEach((row, i)=>{
+      const cb = row.querySelector('input[name="field_required"]');
+      if(cb) cb.value = i;
+    });
+  }
+  function bind(row){
+    const btn = row.querySelector('.remove-format-field');
+    if(btn) btn.addEventListener('click', ()=>{ row.remove(); renumber(); });
+  }
+  wrap.querySelectorAll('.format-field-row').forEach(bind);
+  add.addEventListener('click', ()=>{
+    const row = document.createElement('div');
+    row.className = 'format-field-row';
+    row.innerHTML = `
+      <input name="field_label" placeholder="Etichetta" value="Nuovo campo">
+      <input name="field_key" placeholder="nome_campo" value="nuovo_campo">
+      <select name="field_type"><option value="text">text</option><option value="email">email</option><option value="tel">tel</option><option value="number">number</option><option value="date">date</option><option value="time">time</option><option value="select">select</option><option value="textarea">textarea</option></select>
+      <input name="field_placeholder" placeholder="Placeholder">
+      <textarea name="field_options" placeholder="Opzioni select, una per riga"></textarea>
+      <label class="inline-check"><input type="checkbox" name="field_required" value="0"> Obbligatorio</label>
+      <button type="button" class="btn ghost remove-format-field">Rimuovi</button>`;
+    wrap.appendChild(row); bind(row); renumber();
+  });
+})();
+</script>
+{% endblock %}

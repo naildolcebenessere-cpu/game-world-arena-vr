@@ -220,7 +220,7 @@ def seed_if_empty():
         games = [('Quantum Arena','VR','2-6',30,12,'Arena futuristica a squadre'),('Cyber Shot','VR','1-4',30,12,'Sparatutto arcade'),('Cops vs Robbers','VR','2-6',30,12,'Sfida multiplayer'),('PlayStation 5','Console','1-4',60,10,'Postazione console')]
         executemany('INSERT INTO games(title,category,players,duration,price,description) VALUES (?,?,?,?,?,?)', games)
 
-    defaults = [('business_name','Game World Arena VR'),('business_kicker','GAME WORLD · VR EXPERIENCE'),('home_title','Vivi la realtà virtuale come non l’hai mai vista'),('home_subtitle','Arena VR, console, compleanni ed eventi privati con atmosfera neon dark fucsia.'),('booking_title','Prenota la tua esperienza VR'),('public_footer','Esperienze VR, console, compleanni ed eventi privati.'),('whatsapp_prefix','39'),('currency','€')]
+    defaults = [('business_name','Game World Arena VR'),('business_kicker','GAME WORLD · VR EXPERIENCE'),('home_title','Vivi la realtà virtuale come non l’hai mai vista'),('home_subtitle','Arena VR, console, compleanni ed eventi privati con atmosfera neon dark fucsia.'),('booking_title','Prenota la tua esperienza VR'),('public_footer','Esperienze VR, console, compleanni ed eventi privati.'),('whatsapp_prefix','39'),('currency','€'),('event_form_title','Richiedi informazioni o un preventivo'),('event_form_subtitle','Compila il form: ti ricontattiamo il prima possibile con una proposta per il tuo evento VR.'),('event_form_button','Richiedi evento'),('event_form_privacy','Acconsento al trattamento dei dati per essere ricontattato in merito alla mia richiesta.'),('event_form_thanks','Richiesta evento inviata. Ti ricontatteremo il prima possibile.')]
     for k, v in defaults:
         insert_setting_default(k, v)
 

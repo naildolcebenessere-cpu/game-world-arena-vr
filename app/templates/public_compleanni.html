@@ -1,0 +1,67 @@
+{% extends 'public_base.html' %}
+{% block content %}
+<section class="event-request-shell">
+  <div class="event-request-hero">
+    <span>{{ st.get('business_kicker','VR EXPERIENCE') }}</span>
+    <h1>{{ page.title if page else 'Compleanni ed eventi' }}</h1>
+    <p>{{ page.subtitle if page else 'Richiedi un evento personalizzato per compleanni, feste private e gruppi.' }}</p>
+    <a class="btn primary" href="#richiedi-evento">{{ form_cfg.button }}</a>
+  </div>
+
+  {% for s in sections %}
+  <div class="mobile-info-card">
+    <span>{{ s.kicker }}</span>
+    <h2>{{ s.title }}</h2>
+    <p>{{ s.body }}</p>
+  </div>
+  {% endfor %}
+
+  <form id="richiedi-evento" method="post" class="event-request-card">
+    <div class="section-mini-head">
+      <h2>{{ form_cfg.title }}</h2>
+      <p>{{ form_cfg.subtitle }}</p>
+    </div>
+
+    {% for f in form_cfg.fields %}
+      <label>{{ f.label }}{% if f.required %} <b>*</b>{% endif %}</label>
+      {% if f.type == 'textarea' %}
+        <textarea name="{{ f.key }}" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}></textarea>
+      {% elif f.type == 'select' %}
+        <select name="{{ f.key }}" {% if f.required %}required{% endif %}>
+          {% for opt in f.options.split('\n') if opt.strip() %}
+          <option value="{{ opt.strip() }}">{{ opt.strip() }}</option>
+          {% endfor %}
+        </select>
+      {% else %}
+        <input type="{{ f.type }}" name="{{ f.key }}" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}>
+      {% endif %}
+    {% endfor %}
+
+    <label class="privacy-line"><input type="checkbox" required> {{ form_cfg.privacy }}</label>
+    <button type="submit" class="mobile-book-button">{{ form_cfg.button }}</button>
+    <p class="mini-help centered">Niente spam: useremo i tuoi dati solo per rispondere alla richiesta di questo evento.</p>
+  </form>
+
+  {% if packs %}
+  <section class="event-packages">
+    <div class="section-head"><span>PACCHETTI</span><h2>Idee per eventi</h2></div>
+    <div class="public-grid">
+      {% for p in packs %}
+      <article class="game-card"><span>{{p.type}}</span><h3>{{p.name}}</h3><p>{{p.minutes}} minuti di esperienza.</p><b>{{st.get('currency','€')}} {{p.price}}</b></article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if gallery %}
+  <section class="event-gallery">
+    <div class="section-head"><span>GALLERIA</span><h2>Dentro l’arena</h2></div>
+    <div class="public-grid">
+      {% for img in gallery %}
+      <article class="game-card">{% if img.image %}<img src="{{url_for('static', filename='uploads/' + img.image)}}" alt="{{img.title}}">{% endif %}<span>MEDIA</span><h3>{{img.title}}</h3><p>{{img.caption}}</p></article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

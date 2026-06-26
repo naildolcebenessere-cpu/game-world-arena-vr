@@ -34,6 +34,50 @@ def get_menu_pages():
     return query('SELECT * FROM site_pages WHERE active=1 AND show_in_menu=1 ORDER BY sort_order, id')
 
 
+DEFAULT_EVENT_FORM_FIELDS = [
+    {'key':'name', 'label':'Nome e cognome / Azienda', 'type':'text', 'placeholder':'Es. Mario Rossi / Rossi S.r.l.', 'required':True, 'options':''},
+    {'key':'email', 'label':'Email', 'type':'email', 'placeholder':'tuoindirizzo@mail.com', 'required':True, 'options':''},
+    {'key':'phone', 'label':'Telefono', 'type':'tel', 'placeholder':'Es. 333 1234567', 'required':True, 'options':''},
+    {'key':'event_type', 'label':'Tipo di evento', 'type':'select', 'placeholder':'', 'required':False, 'options':'Compleanno\nEvento aziendale\nFesta privata\nTeam building\nAltro'},
+    {'key':'participants', 'label':'Numero partecipanti', 'type':'text', 'placeholder':'Es. 10-20', 'required':False, 'options':''},
+    {'key':'date_hint', 'label':'Data indicativa', 'type':'text', 'placeholder':'Es. fine maggio, weekend, data precisa...', 'required':False, 'options':''},
+    {'key':'details', 'label':'Dettagli / richieste', 'type':'textarea', 'placeholder':'Raccontaci il tipo di evento, orari preferiti, esigenze particolari...', 'required':False, 'options':''},
+]
+
+
+def get_event_form_config():
+    st = get_settings_dict()
+    try:
+        fields = json.loads(st.get('event_form_fields') or '[]')
+        if not isinstance(fields, list) or not fields:
+            fields = DEFAULT_EVENT_FORM_FIELDS
+    except Exception:
+        fields = DEFAULT_EVENT_FORM_FIELDS
+    clean_fields = []
+    allowed_types = {'text','email','tel','number','date','time','select','textarea'}
+    for idx, f in enumerate(fields):
+        key = ''.join(ch.lower() if ch.isalnum() else '_' for ch in str(f.get('key') or f'campo_{idx+1}')).strip('_') or f'campo_{idx+1}'
+        ftype = str(f.get('type') or 'text').lower()
+        if ftype not in allowed_types:
+            ftype = 'text'
+        clean_fields.append({
+            'key': key,
+            'label': str(f.get('label') or key.replace('_',' ').title()),
+            'type': ftype,
+            'placeholder': str(f.get('placeholder') or ''),
+            'required': bool(f.get('required')),
+            'options': str(f.get('options') or '')
+        })
+    return {
+        'title': st.get('event_form_title') or 'Richiedi informazioni o un preventivo',
+        'subtitle': st.get('event_form_subtitle') or 'Compila il form: ti ricontattiamo il prima possibile con una proposta per il tuo evento VR.',
+        'button': st.get('event_form_button') or 'Richiedi evento',
+        'privacy': st.get('event_form_privacy') or 'Acconsento al trattamento dei dati per essere ricontattato in merito alla mia richiesta.',
+        'thanks': st.get('event_form_thanks') or 'Richiesta evento inviata. Ti ricontatteremo il prima possibile.',
+        'fields': clean_fields
+    }
+
+
 def upload_file(field='image'):
     f = request.files.get(field)
     if not f or not f.filename:
@@ -110,9 +154,38 @@ def public_games():
     return render_public_page('giochi')
 
 
-@bp.route('/compleanni')
+@bp.route('/compleanni', methods=['GET','POST'])
 def public_events():
-    return render_public_page('compleanni')
+    st = get_settings_dict()
+    page = query('SELECT * FROM site_pages WHERE slug=? AND active=1', ('compleanni',), one=True)
+    sections = query('SELECT * FROM site_sections WHERE page_id=? AND active=1 ORDER BY sort_order,id', (page['id'],)) if page else []
+    packs = query('SELECT * FROM packages WHERE active=1 ORDER BY type, price')
+    gallery = query('SELECT * FROM gallery_items WHERE active=1 ORDER BY sort_order,id DESC LIMIT 8')
+    form_cfg = get_event_form_config()
+    if request.method == 'POST':
+        submitted = {}
+        for field in form_cfg['fields']:
+            submitted[field['key']] = (request.form.get(field['key']) or '').strip()
+        customer_name = submitted.get('name') or submitted.get('nome') or submitted.get('customer_name') or 'Richiesta evento'
+        phone = submitted.get('phone') or submitted.get('telefono') or ''
+        title = submitted.get('event_type') or submitted.get('tipo_evento') or 'Richiesta evento'
+        participants_raw = submitted.get('participants') or submitted.get('partecipanti') or '1'
+        try:
+            people = int(''.join(ch for ch in str(participants_raw) if ch.isdigit()) or 1)
+        except Exception:
+            people = 1
+        notes_lines = []
+        for field in form_cfg['fields']:
+            value = submitted.get(field['key']) or ''
+            if value:
+                notes_lines.append(f"{field['label']}: {value}")
+        notes = '\n'.join(notes_lines)
+        execute("""INSERT INTO events(title,event_date,start_time,end_time,customer_name,phone,status,people,catering,total,notes,created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (title, date.today().isoformat(), '', '', customer_name, phone, 'draft', people, '', 0, notes, datetime.now().isoformat(timespec='seconds')))
+        flash(form_cfg['thanks'])
+        return redirect(url_for('main.public_events'))
+    return render_template('public_compleanni.html', st=st, page=page, sections=sections, packs=packs, gallery=gallery, form_cfg=form_cfg)
 
 
 @bp.route('/contatti')
@@ -1044,6 +1117,51 @@ def theme_settings():
         return redirect(url_for('main.theme_settings'))
     st = get_settings_dict()
     return render_template('theme_settings.html', st=st)
+
+@bp.route('/admin/form-eventi', methods=['GET','POST'])
+@login_required
+def event_form_settings():
+    if request.method == 'POST':
+        upsert_setting('event_form_title', request.form.get('event_form_title') or '')
+        upsert_setting('event_form_subtitle', request.form.get('event_form_subtitle') or '')
+        upsert_setting('event_form_button', request.form.get('event_form_button') or 'Richiedi evento')
+        upsert_setting('event_form_privacy', request.form.get('event_form_privacy') or '')
+        upsert_setting('event_form_thanks', request.form.get('event_form_thanks') or '')
+        keys = request.form.getlist('field_key')
+        labels = request.form.getlist('field_label')
+        types = request.form.getlist('field_type')
+        placeholders = request.form.getlist('field_placeholder')
+        options = request.form.getlist('field_options')
+        required_indexes = set(request.form.getlist('field_required'))
+        fields = []
+        used = set()
+        for i, label in enumerate(labels):
+            label = (label or '').strip()
+            key = (keys[i] if i < len(keys) else '').strip()
+            if not label and not key:
+                continue
+            key = ''.join(ch.lower() if ch.isalnum() else '_' for ch in (key or label)).strip('_') or f'campo_{i+1}'
+            base_key = key
+            n = 2
+            while key in used:
+                key = f'{base_key}_{n}'
+                n += 1
+            used.add(key)
+            fields.append({
+                'key': key,
+                'label': label or key.replace('_',' ').title(),
+                'type': (types[i] if i < len(types) else 'text'),
+                'placeholder': (placeholders[i] if i < len(placeholders) else ''),
+                'required': str(i) in required_indexes,
+                'options': (options[i] if i < len(options) else '')
+            })
+        if not fields:
+            fields = DEFAULT_EVENT_FORM_FIELDS
+        upsert_setting('event_form_fields', json.dumps(fields, ensure_ascii=False))
+        flash('Formato richiesta evento aggiornato')
+        return redirect(url_for('main.event_form_settings'))
+    form_cfg = get_event_form_config()
+    return render_template('event_form_settings.html', form_cfg=form_cfg)
 
 @bp.route('/settings', methods=['GET','POST'])
 @login_required
