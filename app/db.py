@@ -85,22 +85,48 @@ def query(sql, params=(), one=False):
     return (rows[0] if rows else None) if one else rows
 
 
+def _insert_table_name(sql):
+    """Return the target table for a simple INSERT statement, if present."""
+    import re
+    m = re.match(r"\s*INSERT\s+INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)", sql, re.IGNORECASE)
+    return m.group(1) if m else None
+
+
 def execute(sql, params=()):
     db = get_db()
+    wants_returning_id = False
     if is_postgres():
         sql = _normalize_sql_for_postgres(sql)
+        table = _insert_table_name(sql)
+        if table in ID_TABLES and ' returning ' not in f' {sql.lower()} ':
+            sql = sql.rstrip().rstrip(';') + ' RETURNING id'
+            wants_returning_id = True
     cur = db.execute(sql, params)
+    last_id = None
+    if wants_returning_id:
+        row = cur.fetchone()
+        if row:
+            last_id = row['id'] if isinstance(row, dict) else row[0]
+    else:
+        last_id = getattr(cur, 'lastrowid', None)
     db.commit()
-    last_id = getattr(cur, 'lastrowid', None)
     cur.close()
     return last_id
 
 
 def executemany(sql, seq_params):
-    db = get_db()
+    # sqlite3 has executemany() on the connection; psycopg v3 connections do not.
+    # Looping through execute() keeps the same SQL-normalization and RETURNING handling
+    # for both SQLite locale and PostgreSQL/Supabase online.
+    params_list = list(seq_params)
+    if not params_list:
+        return
     if is_postgres():
-        sql = _normalize_sql_for_postgres(sql)
-    cur = db.executemany(sql, seq_params)
+        for params in params_list:
+            execute(sql, params)
+        return
+    db = get_db()
+    cur = db.executemany(sql, params_list)
     db.commit()
     cur.close()
 
