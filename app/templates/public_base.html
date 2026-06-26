@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% if page %}{{page.title}} · {% endif %}{{st.get('business_name','Game World Arena VR')}}</title>
+  <meta name="description" content="{{ page.meta_description if page else st.get('public_footer','Arena VR') }}">
+  <link rel="icon" href="{{ url_for('static', filename='uploads/logo_icon_arena_vr_transparent.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="public-body">
+<div class="stars"></div>
+<header class="public-nav">
+  <a class="public-logo public-logo-image" href="{{url_for('main.public_home')}}" aria-label="{{st.get('business_name','Game World Arena VR')}}">
+    <img src="{{ url_for('static', filename='uploads/logo_game_world_arena_vr_transparent.png') }}" alt="{{st.get('business_name','Game World Arena VR')}}">
+  </a>
+  <nav>
+    {% for p in menu_pages() %}
+    <a href="{{ '/' if p.slug=='home' else (url_for('main.public_gallery') if p.slug=='gallery' else (url_for('main.public_fidelity') if p.slug=='fidelity' else ('/' + p.slug if p.slug in ['giochi','compleanni','prenota','contatti'] else '/pagina/' + p.slug))) }}" class="{% if p.slug=='prenota' %}nav-cta{% endif %}">{{p.nav_label}}</a>
+    {% endfor %}
+  </nav>
+</header>
+<main class="public-main">
+  {% with messages=get_flashed_messages() %}{% if messages %}<div class="flash public-flash">{{messages[0]}}</div>{% endif %}{% endwith %}
+  {% block content %}{% endblock %}
+</main>
+{% set pop = active_popup() %}
+{% if pop %}
+<div class="promo-modal" id="promoModal">
+  <div class="promo-box">
+    <button class="promo-close" onclick="document.getElementById('promoModal').style.display='none'">×</button>
+    {% if pop.image %}<img src="{{url_for('static', filename='uploads/' + pop.image)}}">{% endif %}
+    <span>PROMO</span><h2>{{pop.title}}</h2><p>{{pop.body}}</p>
+    {% if pop.button_text %}<a class="btn" href="{{pop.button_url or '/prenota'}}">{{pop.button_text}}</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+<footer class="public-footer">
+  <div class="footer-brand footer-brand-logo"><img src="{{ url_for('static', filename='uploads/logo_game_world_arena_vr_transparent.png') }}" alt="{{st.get('business_name','Game World Arena VR')}}"></div>
+  <span>{{st.get('public_footer','Esperienze VR, console, compleanni ed eventi privati.')}}</span>
+</footer>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

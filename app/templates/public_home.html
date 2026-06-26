@@ -1,0 +1,37 @@
+{% extends 'public_base.html' %}{% block content %}
+<div class="home-effects"><i class="orb orb-one"></i><i class="orb orb-two"></i><i class="orb orb-three"></i></div>
+<section class="site-hero">
+  <div>
+    <span class="eyebrow">{{st.get('business_kicker','DARK FUCHSIA · VR ARENA')}}</span>
+    <h1>{{st.get('home_title','Entra nella tua Arena VR')}}</h1>
+    <p>{{st.get('home_subtitle','Esperienze in realtà virtuale, console, compleanni ed eventi in una sala dal look futuristico.')}}</p>
+    <div class="hero-actions">
+      <a class="btn" href="{{url_for('main.public_booking')}}">Prenota ora</a>
+      <a class="btn ghost" href="{{url_for('main.public_games')}}">Scopri i giochi</a>
+    </div>
+  </div>
+  <div class="hero-stage logo-hero-stage">
+    <div class="hero-ring"></div><div class="hero-ring"></div><div class="hero-ring"></div>
+    <div class="hero-logo-card">
+      <img class="hero-main-logo" src="{{ url_for('static', filename='uploads/logo_game_world_arena_vr_transparent.png') }}" alt="{{st.get('business_name','Game World Arena VR')}}">
+      <div class="logo-glow-line"></div>
+    </div>
+  </div>
+</section>
+<section class="public-stats">
+  <div><b>🎮</b><span>Postazioni VR e console</span></div>
+  <div><b>🎉</b><span>Compleanni ed eventi</span></div>
+  <div><b>⚡</b><span>Timer e prenotazioni</span></div>
+  <div><b>💜</b><span>Esperienza neon fucsia</span></div>
+</section>
+<section>
+  <div class="section-head"><span>Giochi in evidenza</span><h2>Scegli la tua esperienza</h2></div>
+  <div class="public-cards">
+    {% for g in games %}<article class="public-card"><span>{{g.category}}</span><h3>{{g.title}}</h3><p>{{g.description}}</p><b>{{g.players}} giocatori · {{g.duration}} min</b><em>Da € {{g.price}}</em></article>{% endfor %}
+  </div>
+</section>
+<section class="split-public">
+  <div class="public-panel"><span>Compleanni</span><h2>Feste private e sala bloccata</h2><p>Puoi gestire fasce orarie, invitati, catering, acconti e conferme direttamente dal pannello amministratore.</p><a class="btn ghost" href="{{url_for('main.public_events')}}">Vedi eventi</a></div>
+  <div class="public-panel"><span>Prenotazione</span><h2>Modulo collegato al backend</h2><p>Le richieste inviate dal sito entrano nel database e le trovi nel pannello admin come bozza da confermare.</p><a class="btn" href="{{url_for('main.public_booking')}}">Apri prenotazione</a></div>
+</section>
+{% endblock %}

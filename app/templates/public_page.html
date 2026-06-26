@@ -1,0 +1,20 @@
+{% extends 'public_base.html' %}{% block content %}
+<section class="hero cms-hero" {% if page.hero_image %}style="background-image:linear-gradient(120deg,rgba(9,5,20,.92),rgba(60,0,56,.72)),url('{{ url_for('static', filename='uploads/' + page.hero_image) }}')"{% endif %}>
+  <div><span>{{st.get('business_kicker','VR EXPERIENCE')}}</span><h1>{{page.title}}</h1><p>{{page.subtitle}}</p><div class="hero-actions"><a class="btn primary" href="{{url_for('main.public_booking')}}">Prenota ora</a><a class="btn ghost" href="{{url_for('main.public_games')}}">Guarda i giochi</a></div></div>
+</section>
+{% for s in sections %}
+<section class="public-section section-{{s.section_type}}">
+  <div class="section-copy"><span>{{s.kicker}}</span><h2>{{s.title}}</h2><p>{{s.body}}</p>{% if s.button_text %}<a class="btn primary" href="{{s.button_url or '#'}}">{{s.button_text}}</a>{% endif %}</div>
+  {% if s.image %}<div class="section-image"><img src="{{ url_for('static', filename='uploads/' + s.image) }}" alt="{{s.title}}"></div>{% endif %}
+</section>
+{% endfor %}
+{% if page.slug in ['home','giochi'] and games %}
+<section><div class="section-head"><span>CATALOGO</span><h2>Giochi disponibili</h2></div><div class="public-grid">{% for g in games %}<article class="game-card">{% if g.cover %}<img src="{{url_for('static', filename='uploads/' + g.cover)}}" alt="{{g.title}}">{% endif %}<span>{{g.category}}</span><h3>{{g.title}}</h3><p>{{g.description}}</p><b>{{st.get('currency','€')}} {{g.price}}</b><small>{{g.players}} giocatori · {{g.duration}} min</small></article>{% endfor %}</div></section>
+{% endif %}
+{% if page.slug in ['home','compleanni'] and packs %}
+<section><div class="section-head"><span>PACCHETTI</span><h2>Pacchetti e prezzi</h2></div><div class="public-grid">{% for p in packs %}<article class="game-card"><span>{{p.type}}</span><h3>{{p.name}}</h3><p>{{p.minutes}} minuti di esperienza.</p><b>{{st.get('currency','€')}} {{p.price}}</b></article>{% endfor %}</div></section>
+{% endif %}
+{% if gallery %}
+<section><div class="section-head"><span>GALLERIA</span><h2>Dentro l’arena</h2></div><div class="public-grid">{% for img in gallery %}<article class="game-card">{% if img.image %}<img src="{{url_for('static', filename='uploads/' + img.image)}}" alt="{{img.title}}">{% endif %}<span>MEDIA</span><h3>{{img.title}}</h3><p>{{img.caption}}</p></article>{% endfor %}</div></section>
+{% endif %}
+{% endblock %}

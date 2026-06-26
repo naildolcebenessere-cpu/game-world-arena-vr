@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Arena Control Center</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="stars"></div>
+{% if session.get('user_id') %}
+<aside class="sidebar">
+  <div class="brand">
+    <span>SUPERADMIN · CONTROL CENTER</span>
+    <b>Arena Control</b>
+  </div>
+  <nav>
+    <div class="nav-section">SITO & CONTENUTI</div>
+    <a href="{{url_for('main.public_home')}}" target="_blank" class="nav-top-public">🌐 Vedi sito pubblico</a>
+    <a href="{{url_for('main.editor_home')}}">🎨 Editor home</a>
+    <a href="{{url_for('main.cms_pages')}}">🧩 Tutte le pagine sito</a>
+    <a href="{{url_for('main.pagine_giochi')}}">🕹️ Catalogo giochi</a>
+    <a href="{{url_for('main.packages_prices')}}">💎 Pacchetti e prezzi</a>
+    <a href="{{url_for('main.gallery')}}">🖼️ Galleria immagini</a>
+    <a href="{{url_for('main.media')}}">📁 Media & asset</a>
+    <a href="{{url_for('main.editor_email')}}">✉️ Editor email</a>
+
+    <div class="nav-section">UTENTI & ACCESSI</div>
+    <a href="{{url_for('main.users_access')}}">👥 Utenti, ruoli e permessi</a>
+    <a href="{{url_for('main.change_password')}}">🔐 Cambia password</a>
+    <a href="{{url_for('main.customers')}}">👤 Clienti</a>
+    <a href="{{url_for('main.fidelity')}}">💳 Fidelity Card</a>
+    <a href="{{url_for('main.newsletter')}}">📧 Iscritti newsletter</a>
+
+    <div class="nav-section">BOOKING & CALENDARIO</div>
+    <a href="{{url_for('main.bookings')}}">🗓️ Gestione prenotazioni</a>
+    <a href="{{url_for('main.calendar_view')}}">📆 Calendario sala</a>
+    <a href="{{url_for('main.events')}}">🎉 Eventi e compleanni</a>
+    <a href="{{url_for('main.signed_modules')}}">📄 Moduli firmati</a>
+    <a href="{{url_for('main.discounts')}}">🏷️ Codici sconto & promo</a>
+    <a href="{{url_for('main.popup_promo')}}">📣 Popup promozionale</a>
+
+    <div class="nav-section">OPERATIVO SALA</div>
+    <a href="{{url_for('main.dashboard')}}">📊 Dashboard sala</a>
+    <a href="{{url_for('main.sessions_page')}}">🎮 Registro partite</a>
+    <a href="{{url_for('main.timer_stations')}}">⏱️ Timer postazioni</a>
+    <a href="{{url_for('main.game_masters')}}">🧑‍🚀 Game master</a>
+    <a href="{{url_for('main.stations')}}">🕹️ Console e postazioni</a>
+    <a href="{{url_for('main.hardware_power')}}">🖥️ Stato hardware</a>
+
+    <div class="nav-section">CASSA & PAGAMENTI</div>
+    <a href="{{url_for('main.cash')}}">💰 Cassa giornaliera</a>
+    <a href="{{url_for('main.monthly_report')}}">📈 Report mensile</a>
+
+    <div class="nav-section">ANALYTICS</div>
+    <a href="{{url_for('main.analytics')}}">📊 Statistiche generali</a>
+
+    <div class="nav-section">SISTEMA</div>
+    <a href="{{url_for('main.settings')}}">⚙️ Impostazioni generali</a>
+    <a href="{{url_for('main.backup')}}">💾 Backup database</a>
+    <a href="{{url_for('main.theme_settings')}}">🎨 Tema grafico</a>
+  </nav>
+</aside>
+{% endif %}
+<main class="main {% if not session.get('user_id') %}full{% endif %}">
+  {% if session.get('user_id') %}
+  <div class="admin-top-right"><b>{{session.get('user_name') or 'Administrator'}}</b><a href="{{url_for('main.logout')}}">Esci</a></div>
+  {% endif %}
+  {% with messages=get_flashed_messages() %}{% if messages %}<div class="flash">{{messages[0]}}</div>{% endif %}{% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

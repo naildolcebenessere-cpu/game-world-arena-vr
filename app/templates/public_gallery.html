@@ -1,0 +1,24 @@
+{% extends 'public_base.html' %}{% block content %}
+<section class="hero cms-hero">
+  <div>
+    <span>GALLERY</span>
+    <h1>{{ page.title if page else 'Gallery' }}</h1>
+    <p>{{ page.subtitle if page else 'Le immagini della sala, degli eventi, dei compleanni e delle esperienze VR.' }}</p>
+  </div>
+</section>
+<section>
+  <div class="section-head"><span>IMMAGINI</span><h2>Dentro Game World Arena VR</h2></div>
+  <div class="public-grid gallery-public-grid">
+    {% for r in rows %}
+    <article class="game-card gallery-public-card">
+      {% if r.image %}<img src="{{url_for('static', filename='uploads/' + r.image)}}" alt="{{r.title}}">{% endif %}
+      <span>GALLERY</span>
+      <h3>{{r.title}}</h3>
+      <p>{{r.caption}}</p>
+    </article>
+    {% else %}
+    <article class="game-card"><span>GALLERY</span><h3>Nessuna immagine ancora caricata</h3><p>Puoi aggiungere immagini dal pannello amministratore, nella sezione Sito & Contenuti → Galleria immagini.</p></article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

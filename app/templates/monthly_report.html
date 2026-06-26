@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block content %}
+<header class="topbar"><div><span>CASSA & PAGAMENTI</span><h1>Report mensile</h1><p>Riepilogo incassi, uscite e netto mese per mese.</p></div></header>
+<section class="panel"><table><tr><th>Mese</th><th>Incassi</th><th>Uscite</th><th>Netto</th></tr>{% for r in rows %}<tr><td><b>{{r.month}}</b></td><td>€ {{'%.2f'|format(r.income or 0)}}</td><td>€ {{'%.2f'|format(r.expenses or 0)}}</td><td><b>€ {{'%.2f'|format(r.net or 0)}}</b></td></tr>{% else %}<tr><td colspan="4">Nessun movimento di cassa.</td></tr>{% endfor %}</table></section>
+{% endblock %}

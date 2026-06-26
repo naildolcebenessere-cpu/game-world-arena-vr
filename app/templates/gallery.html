@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block content %}
+<header class="topbar"><div><span>SITO & CONTENUTI</span><h1>Galleria immagini</h1><p>Carica immagini per home, eventi, sala, compleanni e catalogo. Puoi riutilizzarle nel CMS.</p></div></header>
+<section class="panel"><h2>Nuova immagine galleria</h2><form method="post" enctype="multipart/form-data" class="form gridform"><input name="title" placeholder="Titolo" required><input type="file" name="image" accept="image/*"><input name="sort_order" type="number" placeholder="Ordine" value="0"><label class="check"><input type="checkbox" name="active" checked> Visibile</label><textarea name="caption" placeholder="Didascalia"></textarea><button>Carica immagine</button></form></section>
+<section class="media-grid">{% for r in rows %}<div class="media-card"><img src="{{url_for('static', filename='uploads/' ~ r.image)}}" onerror="this.style.display='none'"><h3>{{r.title}}</h3><p>{{r.caption}}</p><small>{{'Visibile' if r.active else 'Nascosta'}} · ordine {{r.sort_order}}</small></div>{% else %}<div class="panel">Nessuna immagine.</div>{% endfor %}</section>
+{% endblock %}

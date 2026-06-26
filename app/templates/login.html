@@ -1,0 +1,13 @@
+{% extends 'login_base.html' %}{% block content %}
+<section class="loginbox loginbox-pro">
+  <img class="login-logo" src="{{ url_for('static', filename='uploads/logo_game_world_arena_vr_transparent.png') }}" alt="Game World Arena VR">
+  <h1>Arena Control Center</h1>
+  <p>Pannello amministratore Python</p>
+  <form method="post" class="card form">
+    <label>Email<input name="email" value="admin@arena.local"></label>
+    <label>Password<input name="password" type="password" value="admin123"></label>
+    <button>Entra</button>
+    <small>Accesso demo: admin@arena.local / admin123</small>
+  </form>
+</section>
+{% endblock %}

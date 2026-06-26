@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block content %}
+<header class="topbar"><div><span>SISTEMA</span><h1>Tema grafico</h1><p>Imposta testi e preferenze visive principali del sito pubblico.</p></div></header>
+<section class="panel"><h2>Identità e colori</h2><form method="post" class="form gridform"><input name="business_name" placeholder="Nome attività" value="{{st.get('business_name','')}}"><input name="business_kicker" placeholder="Kicker" value="{{st.get('business_kicker','')}}"><input name="theme_primary" placeholder="Colore primario" value="{{st.get('theme_primary','#ff32cf')}}"><input name="theme_secondary" placeholder="Colore secondario" value="{{st.get('theme_secondary','#a855f7')}}"><textarea name="public_footer" placeholder="Testo footer">{{st.get('public_footer','')}}</textarea><button>Salva tema</button></form></section>
+{% endblock %}

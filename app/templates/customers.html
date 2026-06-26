@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block content %}
+<header class="topbar">
+  <div>
+    <span>RUBRICA CLIENTI</span>
+    <h1>Clienti</h1>
+    <p>Lista pulita in orizzontale con codice unico: WhatsApp e Modifica sulla stessa linea. Elimina è dentro Modifica.</p>
+  </div>
+</header>
+
+<section class="panel">
+  <form method="get" class="search">
+    <input name="q" value="{{search}}" placeholder="Cerca nome, telefono, email o codice">
+    <button>Cerca</button>
+    {% if search %}<a class="btn ghost" href="{{ url_for('main.customers') }}">Mostra tutti</a>{% endif %}
+  </form>
+  <form method="post" class="form gridform">
+    <input name="name" placeholder="Nome e cognome" required>
+    <input name="phone" placeholder="Telefono">
+    <input name="email" placeholder="Email">
+    <input name="birthday" type="date" title="Compleanno">
+    <input name="points" type="number" placeholder="Punti fidelity" value="0">
+    <button>Salva cliente</button>
+  </form>
+</section>
+
+<section class="panel table-panel">
+  <div class="table-headline">
+    <div>
+      <span>ELENCO CLIENTI</span>
+      <h2>Rubrica ordinata</h2>
+    </div>
+    <b>{{ rows|length }} clienti</b>
+  </div>
+  <div class="responsive-table">
+    <table class="admin-table clienti-table clienti-clean-table">
+      <thead>
+        <tr>
+          <th>Codice</th>
+          <th>Nome</th>
+          <th>Telefono</th>
+          <th>Email</th>
+          <th>Compleanno</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        {% set phone_clean = (r.phone or '')|replace(' ','')|replace('+','')|replace('-','')|replace('/','') %}
+        <tr>
+          <td data-label="Codice"><span class="code-pill">{{ r.customer_code or ('CL%05d'|format(r.id)) }}</span></td>
+          <td data-label="Nome"><strong>{{ r.name }}</strong></td>
+          <td data-label="Telefono"><strong>{{ r.phone or '—' }}</strong></td>
+          <td data-label="Email"><span class="text-soft">{{ r.email or '—' }}</span></td>
+          <td data-label="Compleanno"><span class="text-soft">{{ r.birthday or '—' }}</span></td>
+          <td data-label="Azioni">
+            <div class="action-stack one-line-actions actions-two">
+              {% if r.phone %}
+                <a class="btn whatsapp-btn" href="https://wa.me/{{ phone_clean if phone_clean.startswith('39') else '39' ~ phone_clean }}" target="_blank">WhatsApp</a>
+              {% else %}
+                <span class="btn ghost disabled">No telefono</span>
+              {% endif %}
+              <button type="button" class="btn ghost edit-toggle" data-target="customer-edit-{{r.id}}">Modifica</button>
+            </div>
+          </td>
+        </tr>
+        <tr id="customer-edit-{{r.id}}" class="detail-row edit-row">
+          <td colspan="6">
+            <div class="client-detail-box">
+              <span class="edit-title">MODIFICA DATI CLIENTE</span>
+              <form method="post" class="form edit-customer-form customer-edit-clean">
+                <input type="hidden" name="action" value="update_customer">
+                <input type="hidden" name="customer_id" value="{{r.id}}">
+                <input name="name" value="{{r.name or ''}}" placeholder="Nome e cognome" required>
+                <input name="phone" value="{{r.phone or ''}}" placeholder="Telefono">
+                <input name="email" value="{{r.email or ''}}" placeholder="Email">
+                <input name="birthday" value="{{r.birthday or ''}}" type="date" title="Compleanno">
+                <input name="points" value="{{r.points or 0}}" type="number" placeholder="Punti fidelity">
+                <textarea name="notes" placeholder="Note interne, non visibili nella tabella">{{ r.notes or '' }}</textarea>
+                <button>Salva modifiche</button>
+              </form>
+              <div class="edit-danger-zone">
+                <span>Zona eliminazione</span>
+                <p>Elimina il cliente solo se sei sicuro: verranno rimossi anche i movimenti fidelity collegati.</p>
+                <form method="post" class="inline-delete-form" onsubmit="return confirm('Vuoi eliminare questo cliente? Verranno eliminati anche i movimenti fidelity collegati.');">
+                  <input type="hidden" name="action" value="delete_customer">
+                  <input type="hidden" name="customer_id" value="{{r.id}}">
+                  <button class="btn danger" type="submit">Elimina cliente</button>
+                </form>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty-row">Nessun cliente trovato.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+document.querySelectorAll('.edit-toggle').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var row = document.getElementById(btn.dataset.target);
+    if(!row) return;
+    document.querySelectorAll('.edit-row').forEach(function(r){ if(r !== row) r.classList.remove('open'); });
+    row.classList.toggle('open');
+  });
+});
+</script>
+{% endblock %}

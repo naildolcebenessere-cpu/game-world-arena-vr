@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% block content %}
+<div class="topbar"><div><span>BOOKING & CALENDARIO</span><h1>Moduli firmati</h1><p>Archivio liberatorie, privacy e moduli collegati ai clienti della sala.</p></div></div>
+<div class="two">
+<section class="panel"><h2>Nuovo modulo</h2><form class="form gridform" method="post" enctype="multipart/form-data">
+<input name="customer_name" placeholder="Nome cliente" required><input name="phone" placeholder="Telefono"><select name="module_type"><option>Liberatoria VR</option><option>Privacy</option><option>Minorenni</option><option>Compleanno/Eventi</option></select><select name="status"><option>firmato</option><option>da firmare</option><option>scaduto</option></select>
+<input type="file" name="file" accept="image/*"><textarea name="notes" placeholder="Note interne"></textarea><button>Salva modulo</button>
+</form></section>
+<section class="panel"><h2>Riepilogo</h2><div class="grid"><div class="card"><span>Moduli totali</span><b>{{rows|length}}</b><small>Archivio locale SQLite</small></div><div class="card"><span>Tipi</span><b>4</b><small>Liberatoria, privacy, minorenni, eventi</small></div></div></section>
+</div>
+<section class="panel" style="margin-top:18px"><h2>Archivio moduli</h2><table><tr><th>Cliente</th><th>Modulo</th><th>Stato</th><th>File</th><th>Data</th><th></th></tr>{% for r in rows %}<tr><td><b>{{r.customer_name}}</b><br><small>{{r.phone}}</small></td><td>{{r.module_type}}<br><small>{{r.notes}}</small></td><td>{{r.status}}</td><td>{% if r.file_name %}<a class="btn ghost" target="_blank" href="{{url_for('static', filename='uploads/' + r.file_name)}}">Apri</a>{% else %}<small>Nessun file</small>{% endif %}</td><td>{{r.created_at}}</td><td><form method="post" action="{{url_for('main.signed_module_delete', id=r.id)}}"><button class="btn danger">Elimina</button></form></td></tr>{% endfor %}</table></section>
+{% endblock %}

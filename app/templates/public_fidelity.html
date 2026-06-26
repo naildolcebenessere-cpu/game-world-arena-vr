@@ -1,0 +1,46 @@
+{% extends 'public_base.html' %}{% block content %}
+<section class="hero cms-hero fidelity-public-hero">
+  <div>
+    <span>FIDELITY</span>
+    <h1>{{ page.title if page else 'Fidelity punti clienti' }}</h1>
+    <p>{{ page.subtitle if page else 'Controlla i tuoi punti fedeltà inserendo telefono, email o nome registrato.' }}</p>
+    <div class="hero-actions"><a class="btn primary" href="{{url_for('main.public_booking')}}">Prenota ora</a></div>
+  </div>
+</section>
+<section class="public-section fidelity-section">
+  <div class="section-copy">
+    <span>AREA CLIENTI</span>
+    <h2>Verifica i tuoi punti</h2>
+    <p>Inserisci il numero di telefono, l’email o il nome registrato in sala. I punti vengono aggiornati dal pannello amministratore.</p>
+  </div>
+  <div class="public-panel fidelity-check-card">
+    <form method="post" class="form">
+      <input name="search" placeholder="Telefono, email o nome" value="{{q}}" required>
+      <button class="btn primary">Controlla punti</button>
+    </form>
+    {% if searched %}
+      {% if customer %}
+      <div class="fidelity-result">
+        <span>CLIENTE TROVATO</span>
+        <h3>{{customer.name}}</h3>
+        <small>Codice Fidelity: <b>{{ customer.customer_code or ('FID%05d'|format(customer.id)) }}</b></small>
+        <b>{{customer.points}} punti</b>
+        <p>{{customer.notes or 'Accumula punti giocando, prenotando eventi e partecipando alle promozioni.'}}</p>
+      </div>
+      {% else %}
+      <div class="fidelity-result muted">
+        <span>NESSUN RISULTATO</span>
+        <h3>Cliente non trovato</h3>
+        <p>Controlla i dati inseriti oppure chiedi allo staff di registrarti alla fidelity card.</p>
+      </div>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+<section class="public-stats fidelity-stats">
+  <div><b>💳</b><span>Punti cliente</span></div>
+  <div><b>🎁</b><span>Premi e vantaggi</span></div>
+  <div><b>🎮</b><span>Gioca e accumula</span></div>
+  <div><b>💜</b><span>Offerte dedicate</span></div>
+</section>
+{% endblock %}

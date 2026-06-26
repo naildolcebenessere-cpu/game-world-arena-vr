@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block content %}
+<header class="topbar"><div><span>OPERATIVO SALA</span><h1>Timer postazioni</h1><p>Controllo immediato dei timer attivi e dello stato delle postazioni.</p></div><a class="btn" href="{{url_for('main.sessions_page')}}">Avvia nuova partita</a></header>
+<section class="grid stats">{% for s in stations %}<div class="card"><span>{{s.station_type}}</span><b>{{s.name}}</b><small>{{s.status}} · {{s.hardware}}</small></div>{% endfor %}</section>
+<section class="panel"><h2>Sessioni attive</h2>{% for r in running %}<div class="row"><b>{{r.customer_name}}</b><span>{{r.station}} · {{r.game_title}}</span><em class="countdown" data-end="{{r.end_at}}"></em></div>{% else %}<p>Nessun timer attivo.</p>{% endfor %}</section>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block content %}
+<header class="topbar">
+  <div>
+    <span>UTENTI & ACCESSI</span>
+    <h1>Fidelity Card</h1>
+    <p>Pagina principale pulita: i dati completi, i punti, le note, WhatsApp e lo storico sono dentro Dettagli.</p>
+  </div>
+  <div class="card compact-stat"><span>Punti totali</span><b>{{total_points}}</b><small>Somma punti clienti</small></div>
+</header>
+
+<section class="panel">
+  <form method="get" class="search fidelity-search">
+    <input name="q" value="{{search}}" placeholder="Scrivi nome, telefono, email o codice cliente">
+    <button>Cerca</button>
+    {% if search %}<a class="btn ghost" href="{{ url_for('main.fidelity') }}">Mostra tutti</a>{% endif %}
+  </form>
+  <p><small>Apri <b>Dettagli</b> per modificare i dati, aggiungere o togliere punti, azzerare il saldo, vedere storico punti e storico presenze.</small></p>
+</section>
+
+<section class="panel table-panel">
+  <div class="table-headline">
+    <div>
+      <span>FIDELITY</span>
+      <h2>Tessere clienti</h2>
+    </div>
+    <b>{{ rows|length }} tessere</b>
+  </div>
+  <div class="responsive-table">
+    <table class="admin-table fidelity-table fidelity-clean-table">
+      <thead>
+        <tr>
+          <th>Codice</th>
+          <th>Nome</th>
+          <th>Telefono</th>
+          <th>Punti</th>
+          <th>Ultima visita</th>
+          <th>Dettagli</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        {% set phone_clean = (r.phone or '')|replace(' ','')|replace('+','')|replace('-','')|replace('/','') %}
+        <tr>
+          <td data-label="Codice"><span class="code-pill">{{ r.customer_code or ('FID%05d'|format(r.id)) }}</span></td>
+          <td data-label="Nome"><strong>{{ r.name }}</strong></td>
+          <td data-label="Telefono"><strong>{{ r.phone or '—' }}</strong></td>
+          <td data-label="Punti"><span class="points-pill">{{ r.points or 0 }}</span></td>
+          <td data-label="Ultima visita"><small>{{ r.last_visit[:16].replace('T',' ') if r.last_visit else '—' }}</small></td>
+          <td data-label="Dettagli">
+            <div class="action-stack one-line-actions">
+              <button type="button" class="btn ghost details-toggle" data-target="fidelity-detail-{{r.id}}">Dettagli</button>
+            </div>
+          </td>
+        </tr>
+        <tr id="fidelity-detail-{{r.id}}" class="detail-row info-row">
+          <td colspan="6">
+            <div class="client-detail-box fidelity-detail-full">
+              <div class="selected-client-grid selected-client-grid-fidelity">
+                <div>
+                  <span>CLIENTE SELEZIONATO</span>
+                  <h3>{{ r.name }}</h3>
+                  <p>{{ r.email or 'Email non inserita' }}<br>{{ r.phone or 'Telefono non inserito' }}</p>
+                </div>
+                <div>
+                  <span>CODICE FIDELITY</span>
+                  <b class="code-pill">{{ r.customer_code or ('FID%05d'|format(r.id)) }}</b>
+                </div>
+                <div>
+                  <span>PUNTI TOTALI</span>
+                  <b class="points-pill big">{{ r.points or 0 }}</b>
+                </div>
+                <div>
+                  <span>WHATSAPP</span>
+                  {% if r.phone %}
+                    <a class="btn whatsapp-btn" href="https://wa.me/{{ phone_clean if phone_clean.startswith('39') else '39' ~ phone_clean }}" target="_blank">Apri WhatsApp</a>
+                  {% else %}
+                    <span class="btn ghost disabled">Telefono mancante</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="fidelity-detail-sections fidelity-detail-grid">
+                <div class="detail-card-mini">
+                  <span class="edit-title">MODIFICA DATI CLIENTE</span>
+                  <form method="post" class="form fidelity-edit-form" action="{{ url_for('main.fidelity', q=search) }}">
+                    <input type="hidden" name="action" value="update_customer">
+                    <input type="hidden" name="customer_id" value="{{r.id}}">
+                    <input name="name" value="{{r.name or ''}}" placeholder="Nome e cognome" required>
+                    <input name="phone" value="{{r.phone or ''}}" placeholder="Telefono">
+                    <input name="email" value="{{r.email or ''}}" placeholder="Email">
+                    <input name="birthday" value="{{r.birthday or ''}}" type="date" title="Compleanno">
+                    <textarea name="notes" placeholder="Note interne">{{ r.notes or '' }}</textarea>
+                    <button>Salva dati</button>
+                  </form>
+                </div>
+
+                <div class="detail-card-mini">
+                  <span class="edit-title">AGGIUNGI / TOGLI PUNTI</span>
+                  <form method="post" class="form points-control-form" action="{{ url_for('main.fidelity', q=search) }}">
+                    <input type="hidden" name="action" value="points">
+                    <input type="hidden" name="customer_id" value="{{r.id}}">
+                    <input name="points" type="number" min="0" placeholder="Punti" value="10">
+                    <select name="mode">
+                      <option value="add">Aggiungi punti</option>
+                      <option value="subtract">Togli punti</option>
+                    </select>
+                    <input name="motive" placeholder="Motivo, es. check-in, premio, promo">
+                    <button>Salva movimento</button>
+                  </form>
+                  <form method="post" class="reset-points-form" action="{{ url_for('main.fidelity', q=search) }}" onsubmit="return confirm('Vuoi azzerare i punti di questo cliente?');">
+                    <input type="hidden" name="action" value="points">
+                    <input type="hidden" name="customer_id" value="{{r.id}}">
+                    <input type="hidden" name="mode" value="reset">
+                    <input type="hidden" name="points" value="0">
+                    <input name="motive" placeholder="Motivo azzeramento, opzionale">
+                    <button class="btn danger" type="submit">Azzera punti</button>
+                  </form>
+                </div>
+
+                <div class="detail-card-mini notes-card">
+                  <span class="edit-title">NOTE INTERNE</span>
+                  <p class="notes-preview">{{ r.notes or 'Nessuna nota interna inserita. Puoi aggiungerla dal riquadro Modifica dati cliente.' }}</p>
+                </div>
+
+                <div class="detail-card-mini history-card span-full">
+                  <span class="edit-title">STORICO PUNTI</span>
+                  <div class="history-table-wrap">
+                    <table class="mini-history-table">
+                      <thead>
+                        <tr><th>Data</th><th>Movimento</th><th>Prima</th><th>Dopo</th><th>Motivo</th><th>Operatore</th></tr>
+                      </thead>
+                      <tbody>
+                        {% for h in histories.get(r.id, []) %}
+                        <tr>
+                          <td>{{ h.created_at[:16].replace('T',' ') if h.created_at else '—' }}</td>
+                          <td><strong>{{ '+' if h.change_amount|int > 0 else '' }}{{ h.change_amount }}</strong></td>
+                          <td>{{ h.before_points }}</td>
+                          <td>{{ h.after_points }}</td>
+                          <td>{{ h.motive or h.mode }}</td>
+                          <td>{{ h.operator or '—' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="empty-row">Nessun movimento punti registrato.</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="detail-card-mini history-card span-full">
+                  <span class="edit-title">STORICO PRESENZE</span>
+                  <div class="history-table-wrap">
+                    <table class="mini-history-table presence-history-table">
+                      <thead>
+                        <tr><th>Data</th><th>Postazione</th><th>Gioco</th><th>Pacchetto</th><th>Importo</th><th>Stato</th></tr>
+                      </thead>
+                      <tbody>
+                        {% for v in visits.get(r.id, []) %}
+                        <tr>
+                          <td>{{ v.start_at[:16].replace('T',' ') if v.start_at else '—' }}</td>
+                          <td>{{ v.station or '—' }}</td>
+                          <td>{{ v.game_title or '—' }}</td>
+                          <td>{{ v.package_name or '—' }}</td>
+                          <td>{{ v.amount or 0 }} €</td>
+                          <td>{{ v.status or '—' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="empty-row">Nessuna presenza/sessione registrata.</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty-row">Nessun cliente trovato nella fidelity.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+document.querySelectorAll('.details-toggle').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var row = document.getElementById(btn.dataset.target);
+    if(!row) return;
+    document.querySelectorAll('.info-row').forEach(function(r){ if(r !== row) r.classList.remove('open'); });
+    row.classList.toggle('open');
+  });
+});
+</script>
+{% endblock %}

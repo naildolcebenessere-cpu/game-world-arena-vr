@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block content %}
+<header class="topbar"><div><span>BOOKING & CALENDARIO</span><h1>Calendario sala</h1><p>Vista rapida di prenotazioni, eventi e compleanni. Colori diversi per stato e tipologia.</p></div><a class="btn" href="{{url_for('main.bookings')}}">+ Prenotazione</a></header>
+<section class="two"><div class="panel"><h2>Prenotazioni prossime</h2>{% for r in bookings %}<div class="calendar-item status-{{r.status}}"><b>{{r.booking_date}} · {{r.start_time}}/{{r.end_time}}</b><span>{{r.customer_name}} · {{r.service}}</span><em>{{r.status}}</em></div>{% else %}<p>Nessuna prenotazione prossima.</p>{% endfor %}</div><div class="panel"><h2>Eventi e compleanni</h2>{% for r in events %}<div class="calendar-item event"><b>{{r.event_date}} · {{r.start_time}}/{{r.end_time}}</b><span>{{r.title}} · {{r.customer_name}}</span><em>{{r.status}}</em></div>{% else %}<p>Nessun evento prossimo.</p>{% endfor %}</div></section>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block content %}
+<div class="topbar"><div><span>BOOKING & CALENDARIO</span><h1>Popup promozionale</h1><p>Gestisci il popup che appare nella home del sito pubblico.</p></div><a class="btn ghost" target="_blank" href="{{url_for('main.public_home')}}">Vedi sito</a></div>
+<div class="two">
+<section class="panel"><h2>Configura popup</h2><form class="form" method="post" enctype="multipart/form-data">
+<label>Titolo</label><input name="title" value="{{popup.title if popup else ''}}" required>
+<label>Testo</label><textarea name="body">{{popup.body if popup else ''}}</textarea>
+<label>Testo pulsante</label><input name="button_text" value="{{popup.button_text if popup else ''}}">
+<label>Link pulsante</label><input name="button_url" value="{{popup.button_url if popup else '/prenota'}}">
+<label>Immagine popup</label><input type="file" name="image" accept="image/*">
+<label class="check"><input type="checkbox" name="active" {% if popup and popup.active %}checked{% endif %}> Popup attivo sul sito pubblico</label>
+<button>Salva popup</button></form></section>
+<section class="panel"><h2>Anteprima</h2><div class="promo-preview"><span>PROMO</span><h2>{{popup.title if popup else 'Titolo popup'}}</h2><p>{{popup.body if popup else 'Testo promozionale visibile nella home.'}}</p>{% if popup and popup.image %}<img class="card-cover" src="{{url_for('static', filename='uploads/' + popup.image)}}">{% endif %}<a class="btn" href="#">{{popup.button_text if popup else 'Prenota ora'}}</a><small>Stato: {{'attivo' if popup and popup.active else 'non attivo'}}</small></div></section>
+</div>
+{% endblock %}

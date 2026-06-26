@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block content %}
+<header class="topbar"><div><span>OPERATIVO SALA</span><h1>Console e postazioni</h1><p>Configura arena VR, console, PC, TV, stato e note hardware.</p></div></header>
+<section class="panel"><h2>Nuova postazione</h2><form method="post" class="form gridform"><input name="name" placeholder="Nome postazione" required><select name="station_type"><option>VR</option><option>Console</option><option>PC</option><option>Evento</option></select><select name="status"><option>libera</option><option>occupata</option><option>manutenzione</option></select><input name="hardware" placeholder="Hardware"><textarea name="notes" placeholder="Note"></textarea><label class="check"><input type="checkbox" name="active" checked> Attiva</label><button>Salva postazione</button></form></section>
+<section class="cards">{% for r in rows %}<div class="card"><span>{{r.station_type}}</span><b>{{r.name}}</b><small>{{r.status}}<br>{{r.hardware}}<br>{{r.notes}}</small></div>{% else %}<div class="panel">Nessuna postazione.</div>{% endfor %}</section>
+{% endblock %}

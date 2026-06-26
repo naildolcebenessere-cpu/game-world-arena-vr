@@ -1,0 +1,22 @@
+{% extends 'base.html' %}{% block content %}
+<div class="topbar"><div><span>SITO & CONTENUTI</span><h1>🎨 Editor home</h1><p>Modifica la pagina principale del sito pubblico: titolo, sottotitolo, immagine principale e blocchi.</p></div><a class="btn ghost" href="{{url_for('main.public_home')}}" target="_blank">🌐 Vedi home pubblica</a></div>
+<div class="quick-grid">
+  <a class="quick-card" href="{{url_for('main.cms_section_new', page_id=page.id)}}"><span>➕</span><b>Aggiungi sezione</b><small>Nuovo blocco nella home</small></a>
+  <a class="quick-card" href="{{url_for('main.media')}}"><span>🖼️</span><b>Media & asset</b><small>Carica immagini</small></a>
+  <a class="quick-card" href="{{url_for('main.pagine_giochi')}}"><span>🎮</span><b>Pagine giochi</b><small>Gestisci giochi e copertine</small></a>
+  <a class="quick-card" href="{{url_for('main.cms_pages')}}"><span>🧩</span><b>Tutte le pagine</b><small>CMS completo</small></a>
+</div>
+<div class="panel"><h2>Impostazioni Home</h2>
+<form method="post" enctype="multipart/form-data" class="form gridform wide">
+<label>Etichetta menu<input name="nav_label" value="{{page.nav_label}}"></label>
+<label>Titolo grande<input name="title" value="{{page.title}}"></label>
+<label class="fullrow">Sottotitolo<textarea name="subtitle">{{page.subtitle or ''}}</textarea></label>
+<label class="fullrow">Descrizione Google<textarea name="meta_description">{{page.meta_description or ''}}</textarea></label>
+<label>Ordine menu<input name="sort_order" type="number" value="{{page.sort_order}}"></label>
+<label>Immagine principale<input type="file" name="hero_image" accept="image/*"></label>
+<label class="check"><input type="checkbox" name="show_in_menu" {% if page.show_in_menu %}checked{% endif %}> Mostra nel menu pubblico</label>
+<label class="check"><input type="checkbox" name="active" {% if page.active %}checked{% endif %}> Pagina attiva</label>
+<button>Salva Home</button></form></div>
+<div class="panel"><h2>Sezioni della Home</h2>
+{% if sections %}<div class="cards">{% for s in sections %}<div class="card section-admin-card">{% if s.image %}<img src="{{url_for('static', filename='uploads/' ~ s.image)}}">{% endif %}<span>{{s.section_type}} · ordine {{s.sort_order}}</span><h3>{{s.title}}</h3><p>{{s.body}}</p><div class="row-actions"><a class="btn ghost" href="{{url_for('main.cms_section_edit', id=s.id)}}">Modifica</a><form method="post" action="{{url_for('main.cms_section_delete', id=s.id)}}"><button class="btn danger">Elimina</button></form></div></div>{% endfor %}</div>{% else %}<p>Nessuna sezione. Aggiungi il primo blocco della home.</p>{% endif %}</div>
+{% endblock %}

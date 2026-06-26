@@ -1,0 +1,46 @@
+{% extends 'base.html' %}{% block content %}
+<header class="topbar">
+  <div>
+    <span>SISTEMA</span>
+    <h1>Backup & ripristino</h1>
+    <p>Backup esportabile in ZIP/JSON, compatibile sia con SQLite locale sia con Supabase/PostgreSQL.</p>
+  </div>
+  <a class="btn" href="{{ url_for('main.backup_download') }}">Scarica backup ZIP</a>
+</header>
+
+<section class="grid stats">
+  <div class="card"><span>Database</span><b>{{ mode }}</b><small>{{ 'Online' if mode.startswith('Supabase') else db_path }}</small></div>
+  <div class="card"><span>Stato</span><b>{{'OK' if exists else 'NO'}}</b><small>{{(size/1024)|round(1)}} KB se SQLite locale</small></div>
+  <div class="card"><span>Tabelle</span><b>{{ counts|length }}</b><small>Incluse nel backup</small></div>
+</section>
+
+<section class="panel">
+  <h2>Esporta backup</h2>
+  <p>Il pulsante crea un file ZIP con clienti, fidelity, punti, cassa, prenotazioni, pagine, gallery, impostazioni e utenti. Salvalo su PC, Google Drive o chiavetta.</p>
+  <a class="btn" href="{{ url_for('main.backup_download') }}">Scarica backup completo</a>
+</section>
+
+<section class="panel danger-zone">
+  <h2>Ripristina backup</h2>
+  <p><b>Attenzione:</b> il ripristino sostituisce i dati attuali con quelli presenti nel backup. Prima scarica sempre un backup della situazione attuale.</p>
+  <form method="post" action="{{ url_for('main.backup_restore') }}" enctype="multipart/form-data" class="form gridform">
+    <input type="file" name="backup_file" accept=".zip,.json" required>
+    <input name="confirm" placeholder="Scrivi RIPRISTINA per confermare" required>
+    <button class="danger">Ripristina dati</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Contenuto backup</h2>
+  <div class="responsive-table">
+    <table class="admin-table">
+      <thead><tr><th>Tabella</th><th>Record</th></tr></thead>
+      <tbody>
+        {% for table, count in counts %}
+        <tr><td>{{ table }}</td><td><b>{{ count }}</b></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
