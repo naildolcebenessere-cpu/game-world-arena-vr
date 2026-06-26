@@ -1,0 +1,29 @@
+{% extends 'base.html' %}{% block content %}
+<header class="topbar">
+  <div><span>BOOKING & CALENDARIO</span><h1>Moduli modificabili</h1><p>Da qui puoi cambiare testi, pulsanti e campi dei moduli pubblici senza toccare il codice.</p></div>
+</header>
+
+<section class="panel">
+  <h2>Moduli pubblici del sito</h2>
+  <table>
+    <tr><th>Modulo</th><th>Cosa puoi modificare</th><th>Pulsante</th><th>Azioni</th></tr>
+    {% for m in modules %}
+    <tr>
+      <td><b>{{m.name}}</b><br><small>{{m.subtitle}}</small></td>
+      <td>{% if m.supports_fields %}Titolo, sottotitolo, pulsante, privacy, messaggio invio e campi personalizzati{% else %}Titolo, testo, placeholder, pulsante e messaggi{% endif %}</td>
+      <td>{{m.button}}</td>
+      <td><div class="row-actions"><a class="btn" href="{{url_for('main.form_module_settings', code=m.code)}}">Modifica</a>{% if m.public_url %}<a class="btn ghost" target="_blank" href="{{url_for('main.' + m.public_url)}}">Vedi</a>{% endif %}</div></td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="panel" style="margin-top:18px">
+  <h2>Tipi dei moduli firmati</h2>
+  <p class="muted">Questi sono i tipi che compaiono nel menu a tendina della pagina “Moduli firmati”. Scrivine uno per riga.</p>
+  <form method="post" action="{{url_for('main.signed_module_types_save')}}" class="form">
+    <textarea name="signed_module_types" rows="6">{{ signed_types|join('\n') }}</textarea>
+    <button>Salva tipi modulo</button>
+  </form>
+</section>
+{% endblock %}

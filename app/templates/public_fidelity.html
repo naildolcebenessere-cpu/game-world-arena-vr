@@ -10,13 +10,13 @@
 <section class="public-section fidelity-section">
   <div class="section-copy">
     <span>AREA CLIENTI</span>
-    <h2>Verifica i tuoi punti</h2>
-    <p>Inserisci il numero di telefono, l’email o il nome registrato in sala. I punti vengono aggiornati dal pannello amministratore.</p>
+    <h2>{{ fidelity_form_cfg.title }}</h2>
+    <p>{{ fidelity_form_cfg.subtitle }}</p>
   </div>
   <div class="public-panel fidelity-check-card">
     <form method="post" class="form">
-      <input name="search" placeholder="Telefono, email o nome" value="{{q}}" required>
-      <button class="btn primary">Controlla punti</button>
+      <input name="search" placeholder="{{ fidelity_form_cfg.placeholder }}" value="{{q}}" required>
+      <button class="btn primary">{{ fidelity_form_cfg.button }}</button>
     </form>
     {% if searched %}
       {% if customer %}
@@ -30,8 +30,8 @@
       {% else %}
       <div class="fidelity-result muted">
         <span>NESSUN RISULTATO</span>
-        <h3>Cliente non trovato</h3>
-        <p>Controlla i dati inseriti oppure chiedi allo staff di registrarti alla fidelity card.</p>
+        <h3>{{ fidelity_form_cfg.not_found_title }}</h3>
+        <p>{{ fidelity_form_cfg.not_found_text }}</p>
       </div>
       {% endif %}
     {% endif %}

@@ -10,8 +10,8 @@
 
   <div class="booking-mobile-header">
     <span>PRENOTAZIONE RAPIDA</span>
-    <h1>{{ page.title if page else 'Prenota la tua partita' }}</h1>
-    <p>{{ page.subtitle if page else 'Scegli giorno, gioco, orario e posti. Gli slot sono calcolati automaticamente.' }}</p>
+    <h1>{{ booking_form_cfg.title }}</h1>
+    <p>{{ booking_form_cfg.subtitle }}</p>
   </div>
 
   {% for s in sections %}
@@ -92,16 +92,28 @@
         <input name="promo_code" id="mbPromo" placeholder="Codice promo">
         <button type="button" class="btn ghost" id="mbApplyPromo">Applica</button>
       </div>
-      <label class="privacy-line"><input type="checkbox" required> Accetto la richiesta di prenotazione</label>
+      {% for f in booking_form_cfg.fields %}
+        <label>{{ f.label }}{% if f.required %} <b>*</b>{% endif %}</label>
+        {% if f.type == 'textarea' %}
+          <textarea name="custom_{{ f.key }}" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}></textarea>
+        {% elif f.type == 'select' %}
+          <select name="custom_{{ f.key }}" {% if f.required %}required{% endif %}>
+            {% for opt in f.options.split('\n') if opt.strip() %}<option value="{{ opt.strip() }}">{{ opt.strip() }}</option>{% endfor %}
+          </select>
+        {% else %}
+          <input type="{{ f.type }}" name="custom_{{ f.key }}" placeholder="{{ f.placeholder }}" {% if f.required %}required{% endif %}>
+        {% endif %}
+      {% endfor %}
+      <label class="privacy-line"><input type="checkbox" required> {{ booking_form_cfg.privacy }}</label>
     </div>
 
     <div class="phone-book-card summary-card">
       <span>Riepilogo</span>
       <div id="mbSummary" class="booking-summary-lines"></div>
-      <p class="mini-help">Il totale viene calcolato automaticamente in base al numero di giocatori. Pagamento e conferma vengono gestiti dall'admin.</p>
+      <p class="mini-help">Il totale viene calcolato automaticamente in base al numero di giocatori. {{ booking_form_cfg.no_spam }}</p>
     </div>
 
-    <button class="mobile-book-button" type="submit">Blocca lo slot</button>
+    <button class="mobile-book-button" type="submit">{{ booking_form_cfg.button }}</button>
   </form>
 </section>
 {% endblock %}

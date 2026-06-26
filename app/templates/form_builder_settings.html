@@ -1,0 +1,91 @@
+{% extends 'base.html' %}{% block content %}
+<header class="topbar">
+  <div><span>MODULI MODIFICABILI</span><h1>{{ form_cfg.name }}</h1><p>Modifica il formato del modulo direttamente dal pannello di controllo.</p></div>
+  <div class="row-actions"><a class="btn ghost" href="{{url_for('main.form_modules')}}">Torna ai moduli</a>{% if form_cfg.public_url %}<a class="btn" target="_blank" href="{{url_for('main.' + form_cfg.public_url)}}">Vedi pagina</a>{% endif %}</div>
+</header>
+
+<form method="post" class="form">
+  <section class="panel">
+    <h2>Testi principali</h2>
+    <div class="gridform">
+      <label>Titolo modulo<input name="form_title" value="{{ form_cfg.title }}"></label>
+      <label>Testo pulsante<input name="form_button" value="{{ form_cfg.button }}"></label>
+    </div>
+    <label>Sottotitolo<textarea name="form_subtitle" rows="3">{{ form_cfg.subtitle }}</textarea></label>
+    <label>Testo privacy / consenso<textarea name="form_privacy" rows="3">{{ form_cfg.privacy }}</textarea></label>
+    <label>Messaggio dopo invio<textarea name="form_thanks" rows="3">{{ form_cfg.thanks }}</textarea></label>
+    <label>Testo piccolo sotto il pulsante<textarea name="form_no_spam" rows="3">{{ form_cfg.no_spam }}</textarea></label>
+    {% if form_cfg.code == 'fidelity' %}
+      <label>Placeholder barra ricerca<input name="form_placeholder" value="{{ form_cfg.placeholder }}"></label>
+      <label>Titolo quando non trova cliente<input name="form_not_found_title" value="{{ form_cfg.not_found_title }}"></label>
+      <label>Testo quando non trova cliente<textarea name="form_not_found_text" rows="3">{{ form_cfg.not_found_text }}</textarea></label>
+    {% endif %}
+  </section>
+
+  {% if form_cfg.supports_fields %}
+  <section class="panel" style="margin-top:18px">
+    <h2>Campi del modulo</h2>
+    <p class="muted">Puoi cambiare nome dei campi, placeholder, obbligatorietà e aggiungere nuove righe. Per i campi a tendina scrivi le opzioni una per riga.</p>
+    <div id="formFieldsBuilder" class="form-fields-builder">
+      {% for f in form_cfg.fields %}
+      <div class="form-field-row">
+        <div class="gridform">
+          <label>Chiave interna<input name="field_key" value="{{f.key}}" placeholder="es. telefono"></label>
+          <label>Etichetta visibile<input name="field_label" value="{{f.label}}" placeholder="es. Telefono"></label>
+          <label>Tipo
+            <select name="field_type">
+              {% for t in ['text','email','tel','number','date','time','select','textarea'] %}<option value="{{t}}" {% if f.type==t %}selected{% endif %}>{{t}}</option>{% endfor %}
+            </select>
+          </label>
+          <label>Placeholder<input name="field_placeholder" value="{{f.placeholder}}"></label>
+        </div>
+        <label>Opzioni select<textarea name="field_options" rows="3">{{f.options}}</textarea></label>
+        <label class="check"><input type="checkbox" name="field_required" value="{{loop.index0}}" {% if f.required %}checked{% endif %}> Campo obbligatorio</label>
+        <button type="button" class="btn danger remove-field-btn">Rimuovi campo</button>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn ghost" id="addFormFieldBtn">+ Aggiungi campo</button>
+  </section>
+  {% endif %}
+
+  <div class="sticky-actions"><button class="btn primary">Salva modifiche modulo</button></div>
+</form>
+
+<script>
+(function(){
+  const wrap = document.getElementById('formFieldsBuilder');
+  const add = document.getElementById('addFormFieldBtn');
+  if(!wrap || !add) return;
+  function refreshIndexes(){
+    wrap.querySelectorAll('.form-field-row').forEach((row, idx)=>{
+      const chk = row.querySelector('input[name="field_required"]');
+      if(chk) chk.value = idx;
+    });
+  }
+  function bindRemove(row){
+    const btn = row.querySelector('.remove-field-btn');
+    if(btn) btn.addEventListener('click', ()=>{ row.remove(); refreshIndexes(); });
+  }
+  wrap.querySelectorAll('.form-field-row').forEach(bindRemove);
+  add.addEventListener('click', ()=>{
+    const idx = wrap.querySelectorAll('.form-field-row').length;
+    const div = document.createElement('div');
+    div.className = 'form-field-row';
+    div.innerHTML = `
+      <div class="gridform">
+        <label>Chiave interna<input name="field_key" placeholder="es. nuovo_campo"></label>
+        <label>Etichetta visibile<input name="field_label" placeholder="es. Nuovo campo"></label>
+        <label>Tipo<select name="field_type"><option>text</option><option>email</option><option>tel</option><option>number</option><option>date</option><option>time</option><option>select</option><option>textarea</option></select></label>
+        <label>Placeholder<input name="field_placeholder"></label>
+      </div>
+      <label>Opzioni select<textarea name="field_options" rows="3"></textarea></label>
+      <label class="check"><input type="checkbox" name="field_required" value="${idx}"> Campo obbligatorio</label>
+      <button type="button" class="btn danger remove-field-btn">Rimuovi campo</button>`;
+    wrap.appendChild(div);
+    bindRemove(div);
+    refreshIndexes();
+  });
+})();
+</script>
+{% endblock %}

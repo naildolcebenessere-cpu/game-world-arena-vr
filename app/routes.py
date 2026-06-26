@@ -34,6 +34,8 @@ def get_menu_pages():
     return query('SELECT * FROM site_pages WHERE active=1 AND show_in_menu=1 ORDER BY sort_order, id')
 
 
+ALLOWED_DYNAMIC_FIELD_TYPES = {'text','email','tel','number','date','time','select','textarea'}
+
 DEFAULT_EVENT_FORM_FIELDS = [
     {'key':'name', 'label':'Nome e cognome / Azienda', 'type':'text', 'placeholder':'Es. Mario Rossi / Rossi S.r.l.', 'required':True, 'options':''},
     {'key':'email', 'label':'Email', 'type':'email', 'placeholder':'tuoindirizzo@mail.com', 'required':True, 'options':''},
@@ -44,21 +46,75 @@ DEFAULT_EVENT_FORM_FIELDS = [
     {'key':'details', 'label':'Dettagli / richieste', 'type':'textarea', 'placeholder':'Raccontaci il tipo di evento, orari preferiti, esigenze particolari...', 'required':False, 'options':''},
 ]
 
+DEFAULT_BOOKING_EXTRA_FIELDS = [
+    {'key':'special_requests', 'label':'Richieste particolari', 'type':'textarea', 'placeholder':'Es. compleanno, preferenze, esigenze particolari...', 'required':False, 'options':''},
+]
 
-def get_event_form_config():
-    st = get_settings_dict()
-    try:
-        fields = json.loads(st.get('event_form_fields') or '[]')
-        if not isinstance(fields, list) or not fields:
-            fields = DEFAULT_EVENT_FORM_FIELDS
-    except Exception:
-        fields = DEFAULT_EVENT_FORM_FIELDS
+PUBLIC_FORM_DEFINITIONS = {
+    'event': {
+        'code':'event',
+        'legacy_prefix':'event_form',
+        'name':'Compleanni / Richiedi evento',
+        'public_url':'public_events',
+        'supports_fields': True,
+        'default_title':'Richiedi informazioni o un preventivo',
+        'default_subtitle':'Compila il form: ti ricontattiamo il prima possibile con una proposta per il tuo evento VR.',
+        'default_button':'Richiedi evento',
+        'default_privacy':'Acconsento al trattamento dei dati per essere ricontattato in merito alla mia richiesta.',
+        'default_thanks':'Richiesta evento inviata. Ti ricontatteremo il prima possibile.',
+        'default_no_spam':'Niente spam: useremo i tuoi dati solo per rispondere alla richiesta di questo evento.',
+        'default_fields': DEFAULT_EVENT_FORM_FIELDS,
+    },
+    'booking': {
+        'code':'booking',
+        'legacy_prefix':'booking_form',
+        'name':'Prenotazione da telefonino',
+        'public_url':'public_booking',
+        'supports_fields': True,
+        'default_title':'Prenota la tua partita',
+        'default_subtitle':'Scegli giorno, gioco, orario e posti. Gli slot sono calcolati automaticamente.',
+        'default_button':'Blocca lo slot',
+        'default_privacy':'Accetto la richiesta di prenotazione e il ricontatto per conferma.',
+        'default_thanks':'Richiesta inviata. Ti ricontatteremo per confermare la prenotazione.',
+        'default_no_spam':'Pagamento e conferma vengono gestiti dall\'admin.',
+        'default_fields': DEFAULT_BOOKING_EXTRA_FIELDS,
+    },
+    'fidelity': {
+        'code':'fidelity',
+        'legacy_prefix':'fidelity_form',
+        'name':'Fidelity pubblica',
+        'public_url':'public_fidelity',
+        'supports_fields': False,
+        'default_title':'Verifica i tuoi punti',
+        'default_subtitle':'Inserisci telefono, email, nome o codice fidelity. I punti vengono aggiornati dal pannello amministratore.',
+        'default_button':'Controlla punti',
+        'default_privacy':'',
+        'default_thanks':'',
+        'default_no_spam':'',
+        'default_placeholder':'Telefono, email, nome o codice fidelity',
+        'default_not_found_title':'Cliente non trovato',
+        'default_not_found_text':'Controlla i dati inseriti oppure chiedi allo staff di registrarti alla fidelity card.',
+        'default_fields': [],
+    },
+}
+
+
+def clean_dynamic_fields(fields, default_fields=None):
+    default_fields = default_fields or []
+    if not isinstance(fields, list) or not fields:
+        fields = default_fields
     clean_fields = []
-    allowed_types = {'text','email','tel','number','date','time','select','textarea'}
+    used = set()
     for idx, f in enumerate(fields):
         key = ''.join(ch.lower() if ch.isalnum() else '_' for ch in str(f.get('key') or f'campo_{idx+1}')).strip('_') or f'campo_{idx+1}'
+        base_key = key
+        n = 2
+        while key in used:
+            key = f'{base_key}_{n}'
+            n += 1
+        used.add(key)
         ftype = str(f.get('type') or 'text').lower()
-        if ftype not in allowed_types:
+        if ftype not in ALLOWED_DYNAMIC_FIELD_TYPES:
             ftype = 'text'
         clean_fields.append({
             'key': key,
@@ -68,14 +124,71 @@ def get_event_form_config():
             'required': bool(f.get('required')),
             'options': str(f.get('options') or '')
         })
-    return {
-        'title': st.get('event_form_title') or 'Richiedi informazioni o un preventivo',
-        'subtitle': st.get('event_form_subtitle') or 'Compila il form: ti ricontattiamo il prima possibile con una proposta per il tuo evento VR.',
-        'button': st.get('event_form_button') or 'Richiedi evento',
-        'privacy': st.get('event_form_privacy') or 'Acconsento al trattamento dei dati per essere ricontattato in merito alla mia richiesta.',
-        'thanks': st.get('event_form_thanks') or 'Richiesta evento inviata. Ti ricontatteremo il prima possibile.',
-        'fields': clean_fields
-    }
+    return clean_fields
+
+
+def get_public_form_config(code='event'):
+    st = get_settings_dict()
+    definition = PUBLIC_FORM_DEFINITIONS.get(code, PUBLIC_FORM_DEFINITIONS['event'])
+    prefix = definition['legacy_prefix']
+    raw_fields = st.get(f'{prefix}_fields')
+    try:
+        if raw_fields is None:
+            fields = definition.get('default_fields') or []
+        else:
+            fields = json.loads(raw_fields or '[]')
+    except Exception:
+        fields = definition.get('default_fields') or []
+    cfg = dict(definition)
+    cfg.update({
+        'title': st.get(f'{prefix}_title') or definition['default_title'],
+        'subtitle': st.get(f'{prefix}_subtitle') or definition['default_subtitle'],
+        'button': st.get(f'{prefix}_button') or definition['default_button'],
+        'privacy': st.get(f'{prefix}_privacy') or definition['default_privacy'],
+        'thanks': st.get(f'{prefix}_thanks') or definition['default_thanks'],
+        'no_spam': st.get(f'{prefix}_no_spam') or definition.get('default_no_spam',''),
+        'placeholder': st.get(f'{prefix}_placeholder') or definition.get('default_placeholder',''),
+        'not_found_title': st.get(f'{prefix}_not_found_title') or definition.get('default_not_found_title',''),
+        'not_found_text': st.get(f'{prefix}_not_found_text') or definition.get('default_not_found_text',''),
+        'fields': clean_dynamic_fields(fields, []) if definition.get('supports_fields') else [],
+    })
+    return cfg
+
+
+def get_event_form_config():
+    return get_public_form_config('event')
+
+
+def parse_form_builder_fields(form):
+    keys = form.getlist('field_key')
+    labels = form.getlist('field_label')
+    types = form.getlist('field_type')
+    placeholders = form.getlist('field_placeholder')
+    options = form.getlist('field_options')
+    required_indexes = set(form.getlist('field_required'))
+    fields = []
+    used = set()
+    for i, label in enumerate(labels):
+        label = (label or '').strip()
+        key = (keys[i] if i < len(keys) else '').strip()
+        if not label and not key:
+            continue
+        key = ''.join(ch.lower() if ch.isalnum() else '_' for ch in (key or label)).strip('_') or f'campo_{i+1}'
+        base_key = key
+        n = 2
+        while key in used:
+            key = f'{base_key}_{n}'
+            n += 1
+        used.add(key)
+        fields.append({
+            'key': key,
+            'label': label or key.replace('_',' ').title(),
+            'type': (types[i] if i < len(types) else 'text'),
+            'placeholder': (placeholders[i] if i < len(placeholders) else ''),
+            'required': str(i) in required_indexes,
+            'options': (options[i] if i < len(options) else '')
+        })
+    return clean_dynamic_fields(fields, [])
 
 
 def upload_file(field='image'):
@@ -210,6 +323,7 @@ def public_fidelity():
     customer = None
     searched = False
     q = ''
+    fidelity_form_cfg = get_public_form_config('fidelity')
     if request.method == 'POST':
         searched = True
         q = (request.form.get('search') or '').strip()
@@ -217,7 +331,7 @@ def public_fidelity():
             customer = query("""SELECT * FROM customers
                                 WHERE phone=? OR email=? OR lower(name)=lower(?) OR upper(customer_code)=upper(?)
                                 ORDER BY id DESC LIMIT 1""", (q, q, q, q), one=True)
-    return render_template('public_fidelity.html', st=st, page=page, customer=customer, searched=searched, q=q)
+    return render_template('public_fidelity.html', st=st, page=page, customer=customer, searched=searched, q=q, fidelity_form_cfg=fidelity_form_cfg)
 
 @bp.route('/pagina/<slug>')
 def public_custom_page(slug):
@@ -231,6 +345,7 @@ def public_booking():
     sections = query('SELECT * FROM site_sections WHERE page_id=? AND active=1 ORDER BY sort_order,id', (page['id'],)) if page else []
     games = query('SELECT * FROM games WHERE active=1 ORDER BY title')
     packs = query('SELECT * FROM packages WHERE active=1 ORDER BY type, price')
+    booking_form_cfg = get_public_form_config('booking')
 
     def _time_add_minutes(value, minutes):
         try:
@@ -256,13 +371,17 @@ def public_booking():
             notes_parts.append(f'Email: {email}')
         if promo:
             notes_parts.append(f'Codice promo: {promo}')
+        for field in booking_form_cfg['fields']:
+            value = (data.get('custom_' + field['key']) or '').strip()
+            if value:
+                notes_parts.append(f"{field['label']}: {value}")
         if raw_notes:
             notes_parts.append(raw_notes)
         notes = ' | '.join(notes_parts)
         execute('INSERT INTO bookings(customer_name,phone,booking_date,start_time,end_time,service,status,people,deposit,total,notes,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
                 (data.get('customer_name'), data.get('phone'), data.get('booking_date'), start_time, end_time,
                  data.get('service'), 'draft', people, 0, total, notes, datetime.now().isoformat(timespec='seconds')))
-        flash('Richiesta inviata. Ti ricontatteremo per confermare la prenotazione.')
+        flash(booking_form_cfg['thanks'])
         return redirect(url_for('main.public_booking'))
 
     today = date.today().isoformat()
@@ -292,7 +411,7 @@ def public_booking():
             'people': int(b['people'] or 1),
             'total': float(b['total'] or 0)
         })
-    return render_template('public_booking.html', st=st, page=page, sections=sections, games=games, packs=packs, games_payload=games_payload, bookings_payload=bookings_payload)
+    return render_template('public_booking.html', st=st, page=page, sections=sections, games=games, packs=packs, games_payload=games_payload, bookings_payload=bookings_payload, booking_form_cfg=booking_form_cfg)
 
 
 @bp.route('/admin')
@@ -650,7 +769,9 @@ def signed_modules():
         flash('Modulo firmato salvato')
         return redirect(url_for('main.signed_modules'))
     rows = query('SELECT * FROM signed_modules ORDER BY created_at DESC LIMIT 150')
-    return render_template('signed_modules.html', rows=rows)
+    st = get_settings_dict()
+    module_types = [x.strip() for x in (st.get('signed_module_types') or 'Liberatoria VR\nPrivacy\nMinorenni\nCompleanno/Eventi').split('\n') if x.strip()]
+    return render_template('signed_modules.html', rows=rows, module_types=module_types)
 
 
 @bp.route('/admin/moduli-firmati/<int:id>/delete', methods=['POST'])
@@ -1118,50 +1239,55 @@ def theme_settings():
     st = get_settings_dict()
     return render_template('theme_settings.html', st=st)
 
+@bp.route('/admin/moduli')
+@login_required
+def form_modules():
+    modules = [get_public_form_config(code) for code in PUBLIC_FORM_DEFINITIONS.keys()]
+    signed_types = (get_settings_dict().get('signed_module_types') or 'Liberatoria VR\nPrivacy\nMinorenni\nCompleanno/Eventi').split('\n')
+    return render_template('form_modules.html', modules=modules, signed_types=[x.strip() for x in signed_types if x.strip()])
+
+
+@bp.route('/admin/moduli/<code>', methods=['GET','POST'])
+@login_required
+def form_module_settings(code):
+    if code not in PUBLIC_FORM_DEFINITIONS:
+        flash('Modulo non trovato')
+        return redirect(url_for('main.form_modules'))
+    definition = PUBLIC_FORM_DEFINITIONS[code]
+    prefix = definition['legacy_prefix']
+    if request.method == 'POST':
+        upsert_setting(f'{prefix}_title', request.form.get('form_title') or '')
+        upsert_setting(f'{prefix}_subtitle', request.form.get('form_subtitle') or '')
+        upsert_setting(f'{prefix}_button', request.form.get('form_button') or definition['default_button'])
+        upsert_setting(f'{prefix}_privacy', request.form.get('form_privacy') or '')
+        upsert_setting(f'{prefix}_thanks', request.form.get('form_thanks') or '')
+        upsert_setting(f'{prefix}_no_spam', request.form.get('form_no_spam') or '')
+        upsert_setting(f'{prefix}_placeholder', request.form.get('form_placeholder') or '')
+        upsert_setting(f'{prefix}_not_found_title', request.form.get('form_not_found_title') or '')
+        upsert_setting(f'{prefix}_not_found_text', request.form.get('form_not_found_text') or '')
+        if definition.get('supports_fields'):
+            fields = parse_form_builder_fields(request.form)
+            upsert_setting(f'{prefix}_fields', json.dumps(fields, ensure_ascii=False))
+        flash('Modulo aggiornato')
+        return redirect(url_for('main.form_module_settings', code=code))
+    form_cfg = get_public_form_config(code)
+    return render_template('form_builder_settings.html', form_cfg=form_cfg)
+
+
 @bp.route('/admin/form-eventi', methods=['GET','POST'])
 @login_required
 def event_form_settings():
-    if request.method == 'POST':
-        upsert_setting('event_form_title', request.form.get('event_form_title') or '')
-        upsert_setting('event_form_subtitle', request.form.get('event_form_subtitle') or '')
-        upsert_setting('event_form_button', request.form.get('event_form_button') or 'Richiedi evento')
-        upsert_setting('event_form_privacy', request.form.get('event_form_privacy') or '')
-        upsert_setting('event_form_thanks', request.form.get('event_form_thanks') or '')
-        keys = request.form.getlist('field_key')
-        labels = request.form.getlist('field_label')
-        types = request.form.getlist('field_type')
-        placeholders = request.form.getlist('field_placeholder')
-        options = request.form.getlist('field_options')
-        required_indexes = set(request.form.getlist('field_required'))
-        fields = []
-        used = set()
-        for i, label in enumerate(labels):
-            label = (label or '').strip()
-            key = (keys[i] if i < len(keys) else '').strip()
-            if not label and not key:
-                continue
-            key = ''.join(ch.lower() if ch.isalnum() else '_' for ch in (key or label)).strip('_') or f'campo_{i+1}'
-            base_key = key
-            n = 2
-            while key in used:
-                key = f'{base_key}_{n}'
-                n += 1
-            used.add(key)
-            fields.append({
-                'key': key,
-                'label': label or key.replace('_',' ').title(),
-                'type': (types[i] if i < len(types) else 'text'),
-                'placeholder': (placeholders[i] if i < len(placeholders) else ''),
-                'required': str(i) in required_indexes,
-                'options': (options[i] if i < len(options) else '')
-            })
-        if not fields:
-            fields = DEFAULT_EVENT_FORM_FIELDS
-        upsert_setting('event_form_fields', json.dumps(fields, ensure_ascii=False))
-        flash('Formato richiesta evento aggiornato')
-        return redirect(url_for('main.event_form_settings'))
-    form_cfg = get_event_form_config()
-    return render_template('event_form_settings.html', form_cfg=form_cfg)
+    return redirect(url_for('main.form_module_settings', code='event'))
+
+
+@bp.route('/admin/moduli-firmati/tipi', methods=['POST'])
+@login_required
+def signed_module_types_save():
+    types = request.form.get('signed_module_types') or 'Liberatoria VR\nPrivacy\nMinorenni\nCompleanno/Eventi'
+    upsert_setting('signed_module_types', types)
+    flash('Tipi di moduli firmati aggiornati')
+    return redirect(url_for('main.form_modules'))
+
 
 @bp.route('/settings', methods=['GET','POST'])
 @login_required
